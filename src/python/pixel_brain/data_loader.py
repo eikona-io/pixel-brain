@@ -1,6 +1,6 @@
 
 import torch
-from typing import List
+from typing import List, Tuple
 from tempfile import TemporaryDirectory
 from pixel_brain.database import Database
 import os
@@ -24,9 +24,9 @@ class DataLoader:
         self._image_paths = self._get_all_image_paths()
         self._tempdir = TemporaryDirectory()
 
-    def __next__(self) -> List[torch.Tensor]:
+    def __next__(self) -> List[Tuple[str, torch.Tensor]]:
         """
-        Returns the next batch of loaded images
+        Returns the next batch of loaded images in the form of [(image_id, image), ..]
         """
         batch = []
         for _ in range(self._batch_size):
@@ -36,7 +36,7 @@ class DataLoader:
             image_id = f"{image_path}:{str(random.randint(0, 1e6))}"
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path)
-            batch.append(image)
+            batch.append((image_id, image))
         return batch
 
     def _load_image(self, image_path):

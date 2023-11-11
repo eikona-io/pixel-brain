@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pixel_brain.database import Database
 from pixel_brain.data_loader import DataLoader
 import torch
-from typing import List
+from typing import List, Tuple
 
 
 class Preprocessor(ABC):
@@ -44,18 +44,20 @@ class PipelineModule(ABC):
         Process the data and store tags.
         """
         self._data.set_batch_size(self._batch_size)
-        for image_batch in self._data:
-            processed_batch = self._pre_processor(image_batch)
-            self._process(processed_batch)
+        for image_and_ids_batch in self._data:
+            image_ids, image_batch = zip(image_and_ids_batch)
+            processed_image_batch = self._pre_processor(image_batch)
+            self._process(image_ids, processed_image_batch)
         
         self._post_process()
 
     @abstractmethod
-    def _process(self, data: DataLoader):
+    def _process(self, image_ids: Tuple[str], processed_image_batch: torch.Tensor):
         """
         Abstract method to be implemented by subclasses for processing data.
         
-        :param data: DataLoader object with data in batches
+        :param image_ids: Tuple of image ids
+        :param processed_image_batch: Batch of preprocessed images
         """
         pass
     
