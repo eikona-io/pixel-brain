@@ -84,6 +84,13 @@ class DataLoader:
         Returns a clone of the dataloader at current time
         """
         return DataLoader(self._images_path, self._database, self._batch_size)
+    
+    
+    def set_batch_size(self, batch_size: int):
+        """
+        Change batch size
+        """
+        self._batch_size = batch_size
 
 
 
