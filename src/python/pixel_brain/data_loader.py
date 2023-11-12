@@ -26,19 +26,29 @@ class DataLoader:
 
     def __next__(self) -> List[Tuple[str, torch.Tensor]]:
         """
-        Returns the next batch of loaded images in the form of [(image_id, image), ..]
+        Returns the next batch of loaded images
+        :returns:
+        ids_batch: List[str]
+        image_batch: List[str]
         """
-        batch = []
+        image_batch, ids_batch = [], []
         for _ in range(self._batch_size):
             if not self._image_paths:
+                if not image_batch:
+                    # no data left
+                    raise StopIteration
                 break
             image_path = self._image_paths.pop(0)
             image_id = f"{image_path}:{str(random.randint(0, 1e6))}"
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path)
-            batch.append((image_id, image))
-        return batch
+            image_batch.append(image)
+            ids_batch.append(image_id)
+        return ids_batch, image_batch
 
+    def __iter__(self):
+        return self
+    
     def _load_image(self, image_path):
         """
         Loads image from local or cloud

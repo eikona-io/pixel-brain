@@ -9,7 +9,7 @@ def db():
     """
     db = Database(database_id='test_db')
     yield db
-    db._db.client.drop_database('test_db')
+    db.delete_db()
 
 def test_store_field(db):
     db.add_image('test_id', 'test_image_path')

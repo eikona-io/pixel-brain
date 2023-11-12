@@ -15,6 +15,7 @@ class Database:
             self._db = MongoClient(mongo_key)[database_id]
         else:
             self._db = MongoClient()[database_id]
+        self._db_id = database_id
 
     def add_image(self, image_id: str, image_path: str):
         """
@@ -47,3 +48,15 @@ class Database:
         :return: The image document.
         """
         return self._db.images.find_one({'_id': image_id})
+    
+    def get_all_images(self) -> list:
+        """
+        Retrieve all images from the database.
+        
+        :return: A list of all image documents.
+        """
+        return list(self._db.images.find())
+    
+    def delete_db(self):
+        """Delete database (use with caution)"""
+        self._db.client.drop_database(self._db_id)

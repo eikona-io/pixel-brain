@@ -25,7 +25,7 @@ class PipelineModule(ABC):
     """
     Abstract base class for pipeline modules.
     """
-    def __init__(self, data: DataLoader, database: Database, pre_processor: Preprocessor, batch_size=1):
+    def __init__(self, data: DataLoader, database: Database, pre_processor: Preprocessor):
         """
         Initialize the pipeline module.
         
@@ -36,16 +36,13 @@ class PipelineModule(ABC):
         """
         self._database = database
         self._pre_processor = pre_processor
-        self._batch_size = batch_size
         self._data = data
 
     def process(self):
         """
         Process the data and store tags.
         """
-        self._data.set_batch_size(self._batch_size)
-        for image_and_ids_batch in self._data:
-            image_ids, image_batch = zip(image_and_ids_batch)
+        for image_ids, image_batch in self._data:
             processed_image_batch = self._pre_processor(image_batch)
             self._process(image_ids, processed_image_batch)
         
