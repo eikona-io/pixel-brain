@@ -33,13 +33,21 @@ def test_next_returns_empty_list_when_no_images():
         batch = next(dl)
     db.delete_db()
 
-def test_next_returns_correct_image_tensor_and_id():
+def next_returns_correct_image_tensor_and_id(decode):
     # Initializing the Database and DataLoader classes
     db = Database()
-    dl = DataLoader('assets/test_data', db)
+    dl = DataLoader('assets/test_data', db, decode_images=decode)
 
     # Testing the __next__ method returns correct image tensor
     batch_ids, batch_imgs = next(dl)
     assert isinstance(batch_ids[0], str)
     assert isinstance(batch_imgs[0], torch.Tensor)
+    assert len(batch_imgs[0].shape) == 3 if decode else len(batch_imgs[0].shape) == 1, f"wrong shape for batch_images: {batch_imgs[0].shape}"
     db.delete_db()
+    
+def test_next_returns_correct_image_tensor_and_id():
+    next_returns_correct_image_tensor_and_id(True)
+    
+def test_next_returns_correct_image_tensor_and_id_no_decode():
+    next_returns_correct_image_tensor_and_id(False)
+    

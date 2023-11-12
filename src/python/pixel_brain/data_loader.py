@@ -7,29 +7,35 @@ import os
 import boto3
 import glob
 import random
-from torchvision.io import read_image
+from torchvision.io import read_image, read_file
 
 
 class DataLoader:
     """
     DataLoader class that loads and decodes images either from disk or S3
     """
-    def __init__(self, images_path, database: Database, batch_size=1):
+    def __init__(self, images_path, database: Database, batch_size=1, decode_images=True):
         """
         Initializes the DataLoader with images path, database and batch size
+        
+        :param images_path: The path to the images. Can be a local path or an S3 path.
+        :param database: The database object to use for storing image metadata.
+        :param batch_size: The number of images to load at a time. Default is 1.
+        :param decode_images: Whether to decode the images. Default is True.
         """
         self._images_path = images_path
         self._database = database
         self._batch_size = batch_size
         self._image_paths = self._get_all_image_paths()
         self._tempdir = TemporaryDirectory()
+        self._decode_images = decode_images
 
     def __next__(self) -> List[Tuple[str, torch.Tensor]]:
         """
         Returns the next batch of loaded images
         :returns:
         ids_batch: List[str]
-        image_batch: List[str]
+        image_batch: List[torch.Tensor]
         """
         image_batch, ids_batch = [], []
         for _ in range(self._batch_size):
@@ -68,13 +74,13 @@ class DataLoader:
         s3 = boto3.client('s3')
         bucket_name, key = image_path.replace('s3://', '').split('/', 1)
         s3.download_file(bucket_name, key, os.path.join(self._tempdir.name, key))
-        return read_image(os.path.join(self._tempdir.name, key))
+        return self._read_image(os.path.join(self._tempdir.name, key))
 
     def _load_image_from_local(self, image_path):
         """
         Loads image from local
         """
-        return read_image(image_path)
+        return self._read_image(image_path)
 
     def _get_all_image_paths(self):
         """
@@ -101,6 +107,9 @@ class DataLoader:
         Change batch size
         """
         self._batch_size = batch_size
+    
+    def _read_image(self, image_path):
+        return read_image(image_path) if self._decode_images else read_file(image_path)
 
 
 
