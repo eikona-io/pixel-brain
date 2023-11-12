@@ -49,7 +49,7 @@ class PipelineModule(ABC):
         self._post_process()
 
     @abstractmethod
-    def _process(self, image_ids: Tuple[str], processed_image_batch: torch.Tensor):
+    def _process(self, image_ids: List[str], processed_image_batch: torch.Tensor):
         """
         Abstract method to be implemented by subclasses for processing data.
         
