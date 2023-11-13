@@ -5,7 +5,7 @@ Pixel Brain is a project that uses machine learning models to process and classi
 All the modules are composable and extendable.
 
 ## High level design
-![High Level Design](assets/hld.jpg)
+![High Level Design](assets/hld.png)
 
 ## Modules
 
