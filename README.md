@@ -8,6 +8,7 @@ All the modules are composable and extendable.
 
 ### Preprocessor
 
+This is an interface for preprocessing a batch of images for a certain model. It is an abstract base class and needs to be subclassed for specific preprocessing methods.
 
 ### DataLoader
 
@@ -16,7 +17,6 @@ The DataLoader class loads and decodes images either from disk or S3. It can be 
 ### Database
 
 The Database class is used to interact with the MongoDB database. It can store fields, query vector fields, find images, and perform other database operations.
-This is an interface for preprocessing a batch of images for a certain model. It is an abstract base class and needs to be subclassed for specific preprocessing methods.
 
 ### ResnetClassifierModule
 
