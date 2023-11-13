@@ -45,7 +45,9 @@ class PipelineModule(ABC):
         for image_ids, image_batch in self._data:
             if self._pre_processor is not None:
                 image_batch = self._pre_processor(image_batch)
-            self._process(image_ids, image_batch)
+            batch_results = self._process(image_ids, image_batch)
+            if batch_results is not None:
+                self._post_process_batch(*batch_results)
         
         self._post_process()
 
@@ -62,6 +64,12 @@ class PipelineModule(ABC):
     def _post_process(self):
         """
         Optional method for child classes to implement some post processing logic (after all images have ben processed)
+        """
+        pass
+    
+    def _post_process_batch(self, *args, **kwargs):
+        """
+        Optional method for child classes to implement some post processing logic for each batch of images
         """
         pass
 
