@@ -1,5 +1,7 @@
 import pytest
 from pixel_brain.database import Database
+import numpy as np
+
 
 @pytest.fixture
 def db():
@@ -29,3 +31,19 @@ def test_find_image(db):
 
 def test_find_image_error(db):
     assert db.find_image("non_existent_id") is None
+    
+def test_local_vector_db_multiple_vectors(db):
+    for i in range(10):
+        db.add_image(f'test_id_{i}', 'test_image_path')
+        random_vector = np.array([1, 2, 3]) + np.random.normal(0, np.sqrt(10), 3)
+        db.store_field(f'test_id_{i}', 'test_field', random_vector)
+    metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]), n_results=5)
+    assert len(metas) == 5
+    assert dists[0] < 100, "distance should be less then 100"
+    
+def test_local_vector_db_singel_vector(db):
+    db.add_image('test_id', 'test_image_path')
+    db.store_field('test_id', 'test_field', np.array([1, 2, 3]))
+    metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]))
+    assert len(metas) == 1
+    assert dists[0] == 0.0, "same vector should have 0 distance"
