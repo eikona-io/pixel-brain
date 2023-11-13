@@ -1,7 +1,8 @@
 
 # Pixel Brain
 
-Pixel Brain is a project that uses machine learning models to process and classify images. It includes modules for image classification with models such as ResNet, image processing with GPT-4 Vision, preprocessing images for a certain model, and a database for storing and retrieving processed data.
+Pixel Brain is a project that uses machine learning models to easily and automatically process and classify images.  
+It includes modules for image classification with models such as ResNet, image processing with GPT-4 Vision, preprocessing modules for different modules, and a database for storing and retrieving processed data.  
 All the modules are composable and extendable.
 
 ## High level design
