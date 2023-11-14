@@ -31,7 +31,7 @@ def test_find_image(db):
 
 def test_find_image_error(db):
     assert db.find_image("non_existent_id") is None
-    
+
 def test_local_vector_db_multiple_vectors(db):
     for i in range(10):
         db.add_image(f'test_id_{i}', 'test_image_path')
@@ -40,10 +40,20 @@ def test_local_vector_db_multiple_vectors(db):
     metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]), n_results=5)
     assert len(metas) == 5
     assert dists[0] < 100, "distance should be less then 100"
-    
+
 def test_local_vector_db_singel_vector(db):
     db.add_image('test_id', 'test_image_path')
     db.store_field('test_id', 'test_field', np.array([1, 2, 3]))
     metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]))
     assert len(metas) == 1
     assert dists[0] == 0.0, "same vector should have 0 distance"
+
+def test_get_field(db):
+    db.add_image('test_id', 'test_image_path')
+    db.store_field('test_id', 'test_field', np.array([1, 2, 3]))
+    db.store_field('test_id', 'test_field2', "test value")
+    val1 = db.get_field('test_id', 'test_field')
+    val2 = db.get_field('test_id', 'test_field2')
+    db.delete_db()
+    assert isinstance(val1, np.ndarray)
+    assert isinstance(val2, str)

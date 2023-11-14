@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pixel_brain.database import Database
 from pixel_brain.data_loader import DataLoader
 import torch
-from typing import List, Tuple
+from typing import List, Union
 
 
 class Preprocessor(ABC):
@@ -11,7 +11,7 @@ class Preprocessor(ABC):
     """
 
     @abstractmethod
-    def __call__(self, image_list: List[torch.Tensor]) -> torch.Tensor:
+    def __call__(self, image_list: List[torch.Tensor]) -> Union[torch.Tensor, List[torch.Tensor]]:
         """
         Abstract method to be implemented by subclasses for preprocessing images.
         
@@ -52,7 +52,7 @@ class PipelineModule(ABC):
         self._post_process()
 
     @abstractmethod
-    def _process(self, image_ids: List[str], processed_image_batch: torch.Tensor):
+    def _process(self, image_ids: List[str], processed_image_batch: Union[torch.Tensor, List[torch.Tensor]]):
         """
         Abstract method to be implemented by subclasses for processing data.
         
