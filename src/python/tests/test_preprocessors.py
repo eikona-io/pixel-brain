@@ -5,7 +5,7 @@ from torchvision.io import read_image
 
 def test_resnet_preprocessor():
     preprocessor = ResnetPreprocessor()
-    test_images = [read_image(img) for img in glob.glob('assets/test_data/*')]
+    test_images = [read_image(img) for img in glob.glob('assets/test_data/**.*')]
     processed_imgs = preprocessor(test_images)
     for img in processed_imgs:
         assert img.shape == (3, 256, 256)
@@ -13,7 +13,7 @@ def test_resnet_preprocessor():
         
 def test_hog_detector_preprocessor():
     preprocessor = HogsDetectorPreprocessor()
-    test_images = [read_image(img) for img in glob.glob('assets/test_data/*')]
+    test_images = [read_image(img) for img in glob.glob('assets/test_data/**.*')]
     processed_imgs = preprocessor(test_images)
     for img in processed_imgs:
         assert img.shape == (512, 512)

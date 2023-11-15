@@ -45,7 +45,7 @@ class DataLoader:
                     raise StopIteration
                 break
             image_path = self._image_paths.pop(0)
-            image_id = f"{image_path}:{str(random.randint(0, 1e6))}"
+            image_id = f"{image_path}"
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path)
             image_batch.append(image)
@@ -93,7 +93,7 @@ class DataLoader:
             return [obj.key for obj in s3.list_objects(Bucket=bucket_name)['Contents']]
         else:
             # Use glob to find image paths locally
-            return glob.glob(os.path.join(self._images_path, '*'))
+            return glob.glob(os.path.join(self._images_path, '**/*.*'), recursive=True)
 
     def clone(self):
         """

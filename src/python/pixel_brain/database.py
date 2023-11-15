@@ -2,6 +2,9 @@ from pymongo import MongoClient
 import chromadb
 import numpy as np
 from typing import List, Tuple
+import shutil
+import random
+import os
 
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
@@ -22,7 +25,8 @@ class Database:
             self._vector_db = None
         else:
             self._db = MongoClient()[database_id]
-            self._vector_db = chromadb.Client()
+            self._local_vector_db_path = f"{os.getcwd()}/chroma/{random.randint(0, 10000)}"
+            self._vector_db = chromadb.PersistentClient(self._local_vector_db_path)
         self._db_id = database_id
 
     def add_image(self, image_id: str, image_path: str):
@@ -117,11 +121,8 @@ class Database:
         self._db.client.drop_database(self._db_id)
         if self._vector_db is not None:
             # TODO support remote vector store
-            for index in self._vector_db.list_collections():
-                index_name = index.name
-                if index_name.split("-")[0] == self._db_id:
-                    self._vector_db.delete_collection(index_name)
-                    
+            shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
+
     def get_field(self, image_id: str, field_name: str):
         """
         Get a field from an image document.
@@ -131,6 +132,8 @@ class Database:
         :return: The value of the field.
         """
         image_doc = self.find_image(image_id)
+        if image_doc is None:
+            raise ValueError(f"Could not find {image_id} image")
         if field_name not in image_doc:
             raise ValueError(f"Field {field_name} not found in image document")
         field_value = image_doc[field_name]
@@ -140,8 +143,8 @@ class Database:
             try:
                 index = self._vector_db.get_collection(index_fqn)
             except ValueError as err:
-                raise RuntimeError(f"Cant find {index_fqn} in vector database")
-            
+                raise RuntimeError(f"Cant find {index_fqn} in vector database, maybe it did not persist?")
+
             field_value = index.get(image_id, include=["embeddings"])['embeddings']
             assert len(field_value) == 1
             field_value = np.array(field_value[0])
