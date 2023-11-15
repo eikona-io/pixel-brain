@@ -36,7 +36,8 @@ class Database:
         :param image_path (str): image path (can be remote storage)
         """
         if self._db.images.find_one({'_id': image_id}):
-            raise ValueError(f"Image ID {image_id} already exists in the database")
+            # already have this image
+            return
 
         self._db.images.update_one({'_id': image_id}, {'$set': {"image_path": image_path}}, upsert=True)
 
@@ -149,3 +150,16 @@ class Database:
             assert len(field_value) == 1
             field_value = np.array(field_value[0])
         return field_value
+
+    def find_images_with_value(self, field_name: str, value=None):
+        """
+        Find all images in the database that have a specific field value.
+
+        :param field_name: The name of the field to find.
+        :param value: The value of the field to find. If None, find all images that have this field.
+        :return: A list of all image documents that match the field value.
+        """
+        if value is None:
+            return list(self._db.images.find({field_name: {"$exists": True}}))
+        else:
+            return list(self._db.images.find({field_name: value}))

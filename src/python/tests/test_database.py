@@ -57,3 +57,26 @@ def test_get_field(db):
     db.delete_db()
     assert isinstance(val1, np.ndarray)
     assert isinstance(val2, str)
+
+def test_find_images(db):
+    db.add_image('test_id', 'test_image_path')
+    db.store_field('test_id', 'test_field', 'test_value')
+    db.store_field('test_id', 'test_field2', 'test_value2')
+    # test with value provided
+    result = db.find_images_with_value('test_field', 'test_value')
+    assert len(result) == 1
+    assert result[0]['_id'] == 'test_id'
+    assert result[0]['test_field'] == 'test_value'
+    result = db.find_images_with_value('test_field2', 'test_value2')
+    assert len(result) == 1
+    assert result[0]['_id'] == 'test_id'
+    assert result[0]['test_field2'] == 'test_value2'
+    # test without value provided
+    result = db.find_images_with_value('test_field')
+    assert len(result) == 1
+    assert result[0]['_id'] == 'test_id'
+    assert result[0]['test_field'] == 'test_value'
+    result = db.find_images_with_value('test_field2')
+    assert len(result) == 1
+    assert result[0]['_id'] == 'test_id'
+    assert result[0]['test_field2'] == 'test_value2'
