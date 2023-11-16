@@ -3,16 +3,19 @@ import numpy as np
 from datetime import datetime
 from pixel_brain.database import Database
 from abc import ABC, abstractmethod
+from sklearn.cluster._hdbscan.hdbscan import HDBSCAN
 
 
 class IdentifyingStrategy(ABC):
     """
     Base class for identifying strategies.
+    This strategies should take image vectors and assign id's to images that belong to the same instance.
     """
     @abstractmethod
     def process(self, image_ids: List[str], image_vecs: List[np.ndarray]):
         """
         Process a list of image IDs and corresponding vectors.
+        This will get each batch of images,
 
         :param image_ids: List of image IDs.
         :param image_vecs: List of corresponding image vectors.
@@ -21,15 +24,22 @@ class IdentifyingStrategy(ABC):
 
     def post_process(self):
         """
-        Optional post-processing step.
+        Optional post-processing step that would be performed after all images have been fed to the strategy.
         """
         pass
+
+    @staticmethod
+    def _get_unique_datatime_str():
+        # assign identity using datetime so later assigned identities will have later values
+        identity = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        return identity
 
 
 class PairwiseIdentifyingStrategy(IdentifyingStrategy):
     """
     Identifying strategy that pairs images with the same identity.
     This is a very conservative strategy which only pairs images with distance smaller then the distance threshold.
+    This strategy is effient both in runtime (O(n)) and in memory space (no need to store vectors in memory!)
     If an image has already been assigned an identity (for a case such as im1--im2-----im3), this identity will be adopted for the third image.
     This strategy will not cover images where the distance to other images of same instance is large.
     """
@@ -90,15 +100,57 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
                     identity = nearest_image[self._identity_field_name]
                 else:
                     # new id required
-                    # assign identity using datetime so later assigned identities will have later values
-                    identity = datetime.now().strftime("%Y%m%d%H%M%S%f")
+                    identity = self._get_unique_datatime_str()
                     self._db.store_field(nearest_image_id, self._identity_field_name, identity)
                 self._db.store_field(image_id, self._identity_field_name, identity)
                 break
 
-class DBSCANIdentifyingStrategy(IdentifyingStrategy):
+
+class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
+    """
+    This class implements the HDBSCAN identifying strategy.
+    This strategy is less strict than 'pairwise' and might group images with different identities to the same group.
+    But, it can also handle instances with images with large distance apart.
+    This strategy runtime complexity is O(nlogn) (expected) and O(n) in space - which might prohibit large datasets from fitting in memory.
+    """
+    def __init__(self, database: Database, identity_field_name: str, min_group_size: int = 2):
+        """
+        Initialize the HDBSCANIdentifyingStrategy.
+
+        :param database: The database object.
+        :param identity_field_name: The name of the identity field.
+        :param min_group_size: The minimum group size for HDBSCAN clustering.
+        """
+        self._database = database
+        self._identity_field_name = identity_field_name
+        self._min_group_size = min_group_size
+        self._vectors = []
+        self._image_ids = []
+
     def process(self, image_ids: List[str], image_vecs: List[np.ndarray]):
-        pass
+        """
+        Process a list of image IDs and corresponding vectors.
+
+        :param image_ids: List of image IDs.
+        :param image_vecs: List of corresponding image vectors.
+        """
+        self._image_ids.extend(image_ids)
+        self._vectors.extend(image_vecs)
 
     def post_process(self):
-        pass
+        """
+        This method applies HDBSCAN clustering and assigns identities based on clusters.
+        """
+        # Stack vectors for HDBSCAN
+        stacked_vectors = np.vstack(self._vectors)
+
+        # Apply HDBSCAN clustering
+        hdbscan = HDBSCAN(min_cluster_size=self._min_group_size)
+        labels = hdbscan.fit_predict(stacked_vectors)
+        identities = {label: f"{self._get_unique_datatime_str()}_{label}" for label in labels} # same label will override but that's OK
+
+        # Assign identities based on clusters
+        for image_id, label in zip(self._image_ids, labels):
+            if label != -1:  # -1 is for noise points
+                identity = identities[label]
+                self._database.store_field(image_id, self._identity_field_name, identity)

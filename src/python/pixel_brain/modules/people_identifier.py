@@ -3,7 +3,7 @@ import torch
 from pixel_brain.database import Database
 from pixel_brain.data_loader import DataLoader
 from pixel_brain.pipeline import PipelineModule
-from pixel_brain.modules.identifying_strategies import PairwiseIdentifyingStrategy, DBSCANIdentifyingStrategy
+from pixel_brain.modules.identifying_strategies import PairwiseIdentifyingStrategy, HDBSCANIdentifyingStrategy
 
 
 class PeopleIdentifierModule(PipelineModule):
@@ -24,7 +24,7 @@ class PeopleIdentifierModule(PipelineModule):
         :param database: Database object
         :param vector_field_name: Name of the field in the database where the vector is stored
         :param identity_field_name: Name of the field in the database where to store the identity
-        :param strategy: Strategy for identifying people, either 'pairwise' or 'dbscan'
+        :param strategy: Strategy for identifying people, either 'pairwise' or 'hdbscan'
         :param distance_threshold: Threshold for the distance between vectors for identification, relevant only in 'pairwise' strategy
         :param pairwise_exclude_group: Group field to exclude images in pairwise identification, relevant only in 'pairwise' strategy
         """
@@ -32,8 +32,8 @@ class PeopleIdentifierModule(PipelineModule):
         self._vector_field_name = vector_field_name
         if strategy == 'pairwise':
             self._identify_strategy = PairwiseIdentifyingStrategy(database, vector_field_name, identity_field_name, distance_threshold, pairwise_exclude_group)
-        elif strategy == 'dbscan':
-            self._identify_strategy = DBSCANIdentifyingStrategy(database, vector_field_name, identity_field_name)
+        elif strategy == 'hdbscan':
+            self._identify_strategy = HDBSCANIdentifyingStrategy(database, identity_field_name)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 

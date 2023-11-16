@@ -11,8 +11,8 @@ def get_identity_from_path(path):
     return identity
 
 
-def test_people_identifier_module():
-    database = Database(database_id="people_identifier_test")
+def people_identifier_module_run(strategy):
+    database = Database(database_id=f"people_identifier_test_{strategy}")
     data = DataLoader("assets/test_data/subjects", database)
     data2 = data.clone()
 
@@ -21,7 +21,7 @@ def test_people_identifier_module():
     facenet_embedder.process()
 
     # Create an instance of PeopleIdentifierModule with pairwise strategy and process the data
-    people_identifier = PeopleIdentifierModule(data2, database, "face_embedding", strategy='pairwise', distance_threshold=290)
+    people_identifier = PeopleIdentifierModule(data2, database, "face_embedding", strategy=strategy)
     people_identifier.process()
 
     # Retrieve all images from the database
@@ -34,5 +34,17 @@ def test_people_identifier_module():
             same_identity_images = database.find_images_with_value("identity", assigned_identity)
             same_identity_image_paths = [meta['image_path'] for meta in same_identity_images]
             orig_identities = [get_identity_from_path(path) for path in same_identity_image_paths]
-            assert len(set(orig_identities)) == 1, "Not all original identities are the same"
+            if strategy == "pairwise":
+                assert len(set(orig_identities)) == 1, "Not all original identities are the same"
+            else:
+                # hdbscan is less strict
+                assert len(set(orig_identities)) <= 2, "Not all original identities are the same"
     database.delete_db()
+
+
+def test_people_identifier_module_pairwise_strategy():
+    people_identifier_module_run('pairwise')
+
+
+def test_people_identifier_module_hdbscan_strategy():
+    people_identifier_module_run('hdbscan')
