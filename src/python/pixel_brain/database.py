@@ -13,18 +13,21 @@ class Database:
     """
     This class is used to interact with the MongoDB database.
     """
-    def __init__(self, mongo_key: str = None, database_id: str = 'db'):
+    def __init__(self, mongo_key: str = None, mongo_vector_key: str = None, database_id: str = 'db'):
         """
         Initialize the Database class.
 
-        :param mongo_key: The MongoDB connection string.
+        :param mongo_key: The MongoDB connection string. if not provided will use local mongo.
+        :param mongo_key: The MongoDB connection string for vector database. if not provided will use local chromadb
         :param database_id: The ID of the database to connect to.
         """
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
-            self._vector_db = None
         else:
             self._db = MongoClient()[database_id]
+        if mongo_vector_key:
+            self._vector_db = MongoClient(mongo_vector_key)[database_id]
+        else:
             self._local_vector_db_path = f"{os.getcwd()}/chroma/{random.randint(0, 10000)}"
             self._vector_db = chromadb.PersistentClient(self._local_vector_db_path)
         self._db_id = database_id
@@ -52,23 +55,22 @@ class Database:
         if not self._db.images.find_one({'_id': image_id}):
             raise ValueError(f"Image ID {image_id} does not exist in the database")
 
-        if isinstance(field_value, np.ndarray) and self._vector_db is not None:
-            if self._vector_db is None:
-                # TODO: support remote vector store using mongodb atlas
-                raise RuntimeError("To store an embedding, vector store must be initialized")
+        if isinstance(field_value, np.ndarray):
             if field_name.find("-") != -1:
                 raise ValueError("Field namd with vector values cannot have '-' in it")
-            index_fqn = f"{self._db_id}-{field_name}"
-            self._store_vector(index_fqn, image_id, field_value)
-            self.store_field(image_id, field_name, IN_VECTOR_STORE_STR)
+            self._store_vector(image_id, field_name, field_value)
 
         else:
             self._db.images.update_one({'_id': image_id}, {'$set': {field_name: field_value}}, upsert=True)
 
-    def _store_vector(self, index_fqn : str, image_id: str, embedding: np.ndarray):
-        assert self._vector_db is not None, "TODO: support remote vector store"
-        index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
-        index.upsert(image_id, embedding.tolist())
+    def _store_vector(self, image_id : str, field_name: str, embedding: np.ndarray):
+        if isinstance(self._vector_db, MongoClient):
+            assert False, "Remote vector store not implemented yet"
+        else:
+            index_fqn = f"{self._db_id}-{field_name}"
+            index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
+            index.upsert(image_id, embedding.tolist())
+            self.store_field(image_id, field_name, IN_VECTOR_STORE_STR)
 
     def query_vector_field(self, field_name: str, query: np.ndarray, n_results=1) -> Tuple[List[dict], List[float]]:
         """
@@ -80,25 +82,24 @@ class Database:
         :param n_results: The number of results to return. Default is 1.
         :return: A tuple containing a list of the closest result metadata and a list of distance metrics.
         """
-        if self._vector_db is None:
-            # TODO: support remote vector store
-            raise ValueError("Vector database is not initialized")
         index_fqn = f"{self._db_id}-{field_name}"
         return self._query_vector(index_fqn, query, n_results)
 
     def _query_vector(self, index_fqn: str, query: np.ndarray, n_results):
-        assert self._vector_db is not None, "TODO: support remote vector store"
-        try:
-            index = self._vector_db.get_collection(index_fqn)
-        except ValueError as err:
-            raise RuntimeError(f"Cant find {index_fqn} in vector database")
-        results = index.query(
-            query.tolist(),
-            n_results=n_results
-        )
-        results_meta = [self.find_image(image_id) for image_id in results['ids'][0]]
-        results_dists = results['distances'][0]
-        return results_meta, results_dists
+        if isinstance(self._vector_db, MongoClient):
+            assert False, "Remote vector store not implemented yet"
+        else:
+            try:
+                index = self._vector_db.get_collection(index_fqn)
+            except ValueError as err:
+                raise RuntimeError(f"Cant find {index_fqn} in vector database")
+            results = index.query(
+                query.tolist(),
+                n_results=n_results
+            )
+            results_meta = [self.find_image(image_id) for image_id in results['ids'][0]]
+            results_dists = results['distances'][0]
+            return results_meta, results_dists
 
     def find_image(self, image_id: str) -> dict:
         """
@@ -120,7 +121,7 @@ class Database:
     def delete_db(self):
         """Delete database (use with caution)"""
         self._db.client.drop_database(self._db_id)
-        if self._vector_db is not None:
+        if not isinstance(self._vector_db, MongoClient):
             # TODO support remote vector store
             shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
 
@@ -140,6 +141,8 @@ class Database:
         field_value = image_doc[field_name]
 
         if field_value == IN_VECTOR_STORE_STR:
+            if isinstance(self._vector_db, MongoClient):
+                raise ValueError(f"{IN_VECTOR_STORE_STR} value is reserved for local vector store")
             index_fqn = f"{self._db_id}-{field_name}"
             try:
                 index = self._vector_db.get_collection(index_fqn)

@@ -1,3 +1,4 @@
 import os
 
 PIXELBRAIN_PATH = os.environ["PIXELBRAIN_PATH"]
+MONGODB_ATLAS_KEY = os.environ["MONGODB_ATLAS_KEY"]
