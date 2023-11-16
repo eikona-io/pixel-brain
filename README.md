@@ -12,6 +12,8 @@ The project also includes pre-built apps for purposes such as people identificat
 To install Pixel Brain, you can use pip to install directly from the GitHub repository. Run the following command:
 
 ```bash
+# install libgl (if not installed)
+sudo apt-get install libgl-dev
 pip install git+https://github.com/omerhac/pixel-brain.git
 ```
 
