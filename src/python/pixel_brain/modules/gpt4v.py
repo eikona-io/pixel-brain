@@ -3,18 +3,24 @@ import requests
 from pixel_brain.pipeline import PipelineModule
 from pixel_brain.data_loader import DataLoader
 from pixel_brain.database import Database
-from typing import List
+from typing import List, Dict
 import torch
-import os
 import logging
+from pixel_brain.utils import OPENAI_KEY, get_logger
 
-logger = logging.getLogger(__name__)
+
+logger = get_logger(__name__)
 
 class Gpt4VModule(PipelineModule):
     """
     Module for processing images with GPT-4 Vision and storing the results in a database.
     """
-    def __init__(self, data: DataLoader, database: Database, question: str, metadata_field_name: str, high_detail=False):
+    def __init__(self, data: DataLoader, 
+                 database: Database, 
+                 question: str, 
+                 metadata_field_name: str,
+                 filters: Dict[str, str] = None,
+                 high_detail=False):
         """
         Initialize the Gpt4vModule.
         
@@ -24,12 +30,12 @@ class Gpt4VModule(PipelineModule):
         :param metadata_field_name: Field name to store the results in the database
         :param high_detail: flag whether to use high detail gpt4v (costs more tokens), default to False
         """
-        super().__init__(data, database, None)
+        super().__init__(data, database, None, filters)
         self._question = question
         self._metadata_field_name = metadata_field_name
-        if "OPENAI_KEY" not in os.environ:
+        if OPENAI_KEY is None:
             raise RuntimeError("OPENAI_KEY must be set to use GPT4VModules")
-        self._api_key = os.environ["OPENAI_KEY"]
+        self._api_key = OPENAI_KEY
         self._headers = self._init_openai_headers()
         self._detail = "high" if high_detail else "low"
 
@@ -90,8 +96,9 @@ class Gpt4VModule(PipelineModule):
             payload = self._generate_payload(image)
             while True:
                 response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=self._headers)
-                if response.status_code == 200:
+                if response.status_code != 200:
                     logger.info(f"Got a {response.status_code} for gpt4v api, response: {response.json()}")
+                else:
                     break
             result = response.json()['choices'][0]['message']['content']
             gpt_results.append(result)
@@ -124,14 +131,14 @@ class GPT4VPeopleDetectorModule(Gpt4VModule):
     This class is a module for detecting people in images using GPT-4 Vision.
     It inherits from the Gpt4VModule class and overrides the _post_process_answers method.
     """
-    def __init__(self, data: DataLoader, database: Database):
+    def __init__(self, data: DataLoader, database: Database, filters: Dict[str, str] = None):
         question = """
         ANSWER ONLY IN YES OR NO.
         
         Is there at least one person in this image?
         """
         metadata_field_name = "is_person"
-        super().__init__(data, database, question, metadata_field_name)
+        super().__init__(data, database, question, metadata_field_name, filters=filters)
     
     def _post_process_answers(self, gpt_results: List[str]):
         processed_answers = []

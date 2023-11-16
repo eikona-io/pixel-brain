@@ -4,8 +4,10 @@ from pixel_brain.modules.embedders import FacenetEmbbedderModule
 import numpy as np
 import re
 import matplotlib.pyplot as plt
+import pytest
 
 
+@pytest.mark.slow_suit
 def test_facenet_embedder():
     database = Database(database_id="facenet_embedder_test")
     data = DataLoader("assets/test_data", database)
@@ -64,6 +66,7 @@ def calulate_subjects_distances(db: Database):
 
     return self_distances, closest_other_distances
 
+@pytest.mark.slow_suit
 def test_facenet_embedder_threshold(draw_plt=False):
     database = Database(database_id="facenet_embedder_test")
     data = DataLoader("assets/test_data/subjects", database)

@@ -1,8 +1,10 @@
 from pixel_brain.data_loader import DataLoader
 from pixel_brain.database import Database
 from pixel_brain.modules.gpt4v import GPT4VPeopleDetectorModule
+import pytest
 
 
+@pytest.mark.skip(reason="gpt4v preview version, rate limits..")
 def test_gpt4v_people_detector():
     database = Database(database_id="gpt4v")
     # test only one image to save cost

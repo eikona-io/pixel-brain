@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import torch
 from pixel_brain.data_loader import DataLoader
 from pixel_brain.database import Database
@@ -12,11 +12,12 @@ from pixel_brain.pre_processors.deepface import DeepfacePreprocessor
 class FacenetEmbbedderModule(PipelineModule):
     """
     This module is responsible for embedding images using the Facenet model.
+    Embeddings are stored in face_embedding field in database.
     Before embedding, the face is detected by Retinaface and extracted from the image.
     This is a very naive implementation using deepface library. it can be greatly improved.
     """
-    def __init__(self, data: DataLoader, database: Database):
-        super().__init__(data, database, DeepfacePreprocessor())
+    def __init__(self, data: DataLoader, database: Database, filters: Dict[str, str] = None):
+        super().__init__(data, database, DeepfacePreprocessor(), filters)
     
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """

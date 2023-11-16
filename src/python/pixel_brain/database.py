@@ -13,7 +13,7 @@ class Database:
     """
     This class is used to interact with the MongoDB database.
     """
-    def __init__(self, mongo_key: str = None, mongo_vector_key: str = None, database_id: str = 'db'):
+    def __init__(self, database_id: str = 'db', mongo_key: str = None, mongo_vector_key: str = None):
         """
         Initialize the Database class.
 

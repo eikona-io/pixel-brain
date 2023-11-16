@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import torch
 from pixel_brain.database import Database
 from pixel_brain.data_loader import DataLoader
@@ -16,7 +16,8 @@ class PeopleIdentifierModule(PipelineModule):
                  identity_field_name: str = 'identity',
                  strategy: str = 'pairwise',
                  distance_threshold: int = 290,
-                 pairwise_exclude_group: str = None):
+                 pairwise_exclude_group: str = None,
+                 filters: Dict[str, str] = None):
         """
         Initialize the PeopleIdentifierModule.
 
@@ -28,7 +29,7 @@ class PeopleIdentifierModule(PipelineModule):
         :param distance_threshold: Threshold for the distance between vectors for identification, relevant only in 'pairwise' strategy
         :param pairwise_exclude_group: Group field to exclude images in pairwise identification, relevant only in 'pairwise' strategy
         """
-        super().__init__(data, database, None)
+        super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name
         if strategy == 'pairwise':
             self._identify_strategy = PairwiseIdentifyingStrategy(database, vector_field_name, identity_field_name, distance_threshold, pairwise_exclude_group)

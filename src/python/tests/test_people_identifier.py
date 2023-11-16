@@ -3,6 +3,7 @@ from pixel_brain.database import Database
 from pixel_brain.modules.embedders import FacenetEmbbedderModule
 from pixel_brain.modules.people_identifier import PeopleIdentifierModule
 import re
+import pytest
 
 
 def get_identity_from_path(path):
@@ -41,11 +42,11 @@ def people_identifier_module_run(strategy):
                 assert len(set(orig_identities)) <= 2, "Not all original identities are the same"
     database.delete_db()
 
-
 def test_people_identifier_module_pairwise_strategy():
     people_identifier_module_run('pairwise')
 
 
+@pytest.mark.slow_suit
 def test_people_identifier_module_hdbscan_strategy():
     people_identifier_module_run('hdbscan')
 

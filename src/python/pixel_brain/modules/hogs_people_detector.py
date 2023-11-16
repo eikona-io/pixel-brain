@@ -3,12 +3,12 @@ from pixel_brain.data_loader import DataLoader
 from pixel_brain.database import Database
 from pixel_brain.pipeline import PipelineModule
 from pixel_brain.pre_processors.hog_detector import HogsDetectorPreprocessor
-from typing import List
+from typing import List, Dict
 
 
 class HogsPeopleDetectorModule(PipelineModule):
-    def __init__(self, data: DataLoader, database: Database):
-        super().__init__(data, database, HogsDetectorPreprocessor())
+    def __init__(self, data: DataLoader, database: Database, filters: Dict[str, str] = None):
+        super().__init__(data, database, HogsDetectorPreprocessor(), filters)
         self._detector = cv2.HOGDescriptor()
         self._detector.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
 

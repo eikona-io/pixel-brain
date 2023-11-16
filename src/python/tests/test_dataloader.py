@@ -2,7 +2,7 @@ from pixel_brain.data_loader import DataLoader
 from pixel_brain.database import Database
 import torch
 import pytest
-
+import glob
 
 def next_returns_correct_batch_size(batch_size):
     # Initializing the Database and DataLoader classes
@@ -50,4 +50,25 @@ def test_next_returns_correct_image_tensor_and_id():
     
 def test_next_returns_correct_image_tensor_and_id_no_decode():
     next_returns_correct_image_tensor_and_id(False)
-    
+
+def test_filter_method():
+    # Initializing the Database and DataLoader classes
+    db = Database("filter_method_test")
+    dl = DataLoader('assets/test_data', db)
+    dl2 = DataLoader('assets/test_data', db)
+    # iterate through data to load it into database
+    for i, (image_ids, _) in enumerate(dl2):
+        if i < 3:
+            # do not store any value for first images
+            continue
+        db.store_field(image_ids[0], "category", str(i % 2))
+
+
+    # sanity
+    assert len(dl) == 40, "there should be 40 images"
+    dl.filter("category")
+    assert len(dl) == 37, "there should be 37 image with category"
+    dl.filter("category", "1")
+    assert len(dl) == 19, "there should be 19 image with category 1"
+
+    db.delete_db()

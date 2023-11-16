@@ -113,6 +113,24 @@ class DataLoader:
 
     def _read_image(self, image_path):
         return read_image(image_path) if self._decode_images else read_file(image_path)
-
-
-
+    
+    def filter(self, field_name: str, field_value=None):
+        """
+        Filters images according to the values in database
+        :param field_name: field to filter upon
+        :param field_value: value to compare to. If none, will accept all field values (only check that field_name is present in metadata)
+        """
+        
+        filtered_paths = []
+        for image_path in self._image_paths:
+            image_doc = self._database.find_images_with_value("image_path", image_path)
+            assert len(image_doc) == 1, "Only one image doc should have a certain path"
+            image_doc = image_doc[0]
+            if field_name in image_doc:
+                if field_value is None:
+                    filtered_paths.append(image_path)
+                else:
+                    if image_doc[field_name] == field_value:
+                        filtered_paths.append(image_path)
+            
+        self._image_paths = filtered_paths
