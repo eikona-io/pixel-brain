@@ -3,7 +3,7 @@ import chromadb
 import numpy as np
 from typing import List, Tuple
 import shutil
-import random
+import pandas as pd
 import os
 
 
@@ -70,7 +70,7 @@ class Database:
             index_fqn = f"{self._db_id}-{field_name}"
             index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
             index.upsert(image_id, embedding.tolist())
-            self.store_field(image_id, field_name, IN_VECTOR_STORE_STR)
+            self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}")
 
     def query_vector_field(self, field_name: str, query: np.ndarray, n_results=1) -> Tuple[List[dict], List[float]]:
         """
@@ -140,7 +140,7 @@ class Database:
             raise ValueError(f"Field {field_name} not found in image document")
         field_value = image_doc[field_name]
 
-        if field_value == IN_VECTOR_STORE_STR:
+        if field_value.find(IN_VECTOR_STORE_STR) != -1:
             if isinstance(self._vector_db, MongoClient):
                 raise ValueError(f"{IN_VECTOR_STORE_STR} value is reserved for local vector store")
             index_fqn = f"{self._db_id}-{field_name}"
@@ -166,3 +166,14 @@ class Database:
             return list(self._db.images.find({field_name: {"$exists": True}}))
         else:
             return list(self._db.images.find({field_name: value}))
+
+
+    def export_to_csv(self, file_path: str):
+        """
+        Export the MongoDB database to a CSV file.
+
+        :param file_path: The path of the CSV file to write to.
+        """
+
+        df = pd.DataFrame(self.get_all_images())
+        df.to_csv(file_path, index=False)
