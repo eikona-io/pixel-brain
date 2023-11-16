@@ -29,7 +29,7 @@ class IdentityTaggingPipeline(TaggingPipeline):
         self._modules = [GPT4VPeopleDetectorModule(people_detector_data, self._database)] if apply_people_detector else []
         # constant modules
         self._modules.extend([
-            # FacenetEmbbedderModule(embedder_data, self._database, embedding_filters),
+            FacenetEmbbedderModule(embedder_data, self._database, embedding_filters),
             PeopleIdentifierModule(people_identifier_data, 
                                    self._database,
                                    filters=identify_filters,
