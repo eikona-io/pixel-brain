@@ -16,5 +16,8 @@ setup(
         'apps': [
             'tag_identity = pixel_brain.apps.tag_identity:main',
         ],
-    }
+    },
+    python_requires='>=3.10',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown'
 )
