@@ -28,7 +28,7 @@ class Database:
         if mongo_vector_key:
             self._vector_db = MongoClient(mongo_vector_key)[database_id]
         else:
-            self._local_vector_db_path = f"{os.getcwd()}/chroma/{random.randint(0, 10000)}"
+            self._local_vector_db_path = f"{os.getcwd()}/chroma/{database_id}"
             self._vector_db = chromadb.PersistentClient(self._local_vector_db_path)
         self._db_id = database_id
 
