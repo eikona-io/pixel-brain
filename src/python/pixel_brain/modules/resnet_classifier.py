@@ -1,4 +1,4 @@
-from torchvision.models import resnet50
+from torchvision.models import resnet50, ResNet50_Weights
 from pixel_brain.pipeline import PipelineModule
 from pixel_brain.pre_processors.resnet_preprocessor import ResnetPreprocessor
 from pixel_brain.data_loader import DataLoader
@@ -28,7 +28,7 @@ class ResnetClassifierModule(PipelineModule):
         """
         super().__init__(data, database, ResnetPreprocessor())
         self._class_subset = np.array([self._get_class_id(class_name) for class_name in class_subset]) if class_subset else None
-        self._resnet = resnet50(pretrained=True).eval()
+        self._resnet = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1).eval()
 
     def _get_class_id(self, class_name: str) -> int:
         """

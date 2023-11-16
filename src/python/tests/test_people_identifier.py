@@ -48,3 +48,5 @@ def test_people_identifier_module_pairwise_strategy():
 
 def test_people_identifier_module_hdbscan_strategy():
     people_identifier_module_run('hdbscan')
+
+test_people_identifier_module_hdbscan_strategy()

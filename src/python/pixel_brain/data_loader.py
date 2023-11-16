@@ -17,7 +17,7 @@ class DataLoader:
     def __init__(self, images_path, database: Database, batch_size=1, decode_images=True):
         """
         Initializes the DataLoader with images path, database and batch size
-        
+
         :param images_path: The path to the images. Can be a local path or an S3 path.
         :param database: The database object to use for storing image metadata.
         :param batch_size: The number of images to load at a time. Default is 1.
@@ -54,7 +54,10 @@ class DataLoader:
 
     def __iter__(self):
         return self
-    
+
+    def __len__(self):
+        return len(self._image_paths) // self._batch_size
+
     def _load_image(self, image_path):
         """
         Loads image from local or cloud
@@ -100,14 +103,14 @@ class DataLoader:
         Returns a clone of the dataloader at current time
         """
         return DataLoader(self._images_path, self._database, self._batch_size)
-    
-    
+
+
     def set_batch_size(self, batch_size: int):
         """
         Change batch size
         """
         self._batch_size = batch_size
-    
+
     def _read_image(self, image_path):
         return read_image(image_path) if self._decode_images else read_file(image_path)
 

@@ -3,7 +3,7 @@ from pixel_brain.database import Database
 from pixel_brain.data_loader import DataLoader
 import torch
 from typing import List, Union
-
+from tqdm import tqdm
 
 class Preprocessor(ABC):
     """
@@ -42,7 +42,7 @@ class PipelineModule(ABC):
         """
         Process the data and store tags.
         """
-        for image_ids, image_batch in self._data:
+        for image_ids, image_batch in tqdm(self._data, desc=self.__class__.__name__):
             if self._pre_processor is not None:
                 image_batch = self._pre_processor(image_batch)
             batch_results = self._process(image_ids, image_batch)
