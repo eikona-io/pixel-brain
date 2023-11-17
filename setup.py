@@ -19,5 +19,6 @@ setup(
     },
     python_requires='>=3.10',
     long_description=open('README.md').read(),
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
+    package_dir={"": "src"}
 )
