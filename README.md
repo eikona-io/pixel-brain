@@ -14,11 +14,18 @@ To install Pixel Brain, you can use pip to install directly from the GitHub repo
 ```bash
 # install libgl (if not installed)
 sudo apt-get install libgl-dev
+# install mongodb and start it (if not using mongodb atlas)
+sudo apt-get install -y mongodb
+sudo systemctl start mongodb
+
 pip install git+https://github.com/omerhac/pixel-brain.git
 ```
 
 ## Usage
 ```bash
+export OPENAI_KEY=your_openai_key # for using gpt4 modules
+export MONGODB_ATLAS_KEY=your_mongodb_atlas_key # if remote db is used
+
 # pre-built identity-tagger application
 tag_identity --data_path /path/to/your/data --export /path/to/export.scv
 
