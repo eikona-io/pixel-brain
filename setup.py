@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
 setup(
     name='pixelbrain',
     version='0.1',
-    packages=find_packages("src/python", exclude=["tests", "tests/*"]),
+    packages=find_packages("src", exclude=["tests", "tests/*"]),
     description='A package for procssing image data using ML models',
     author='Omer Hacohen',
     author_email='omerhac94@gmail.com',
