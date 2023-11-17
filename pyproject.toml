@@ -2,7 +2,7 @@
 name = "pixelbrain"
 version = "0.1"
 description = "A package for processing image data using ML models"
-authors = "Omer Hacohen"
+authors = ["Omer Hacohen"]
 readme = "README.md"
 requires-python = ">=3.10"
 where = ["src"]
