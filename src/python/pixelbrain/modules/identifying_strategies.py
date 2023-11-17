@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 from datetime import datetime
-from pixel_brain.database import Database
+from pixelbrain.database import Database
 from abc import ABC, abstractmethod
 from sklearn.cluster._hdbscan.hdbscan import HDBSCAN
 

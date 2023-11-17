@@ -1,10 +1,10 @@
 from typing import List
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.pipeline import TaggingPipeline
-from pixel_brain.modules.embedders import FacenetEmbbedderModule
-from pixel_brain.modules.people_identifier import PeopleIdentifierModule
-from pixel_brain.modules.gpt4v import GPT4VPeopleDetectorModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.pipeline import TaggingPipeline
+from pixelbrain.modules.embedders import FacenetEmbbedderModule
+from pixelbrain.modules.people_identifier import PeopleIdentifierModule
+from pixelbrain.modules.gpt4v import GPT4VPeopleDetectorModule
 
 
 class IdentityTaggingPipeline(TaggingPipeline):

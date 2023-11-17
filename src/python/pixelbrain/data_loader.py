@@ -2,7 +2,7 @@
 import torch
 from typing import List, Tuple
 from tempfile import TemporaryDirectory
-from pixel_brain.database import Database
+from pixelbrain.database import Database
 import os
 import boto3
 import glob

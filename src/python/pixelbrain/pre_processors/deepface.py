@@ -1,5 +1,5 @@
 from typing import List
-from pixel_brain.pipeline import Preprocessor
+from pixelbrain.pipeline import Preprocessor
 import torch
 from torchvision import transforms
 

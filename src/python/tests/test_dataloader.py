@@ -1,5 +1,5 @@
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
 import torch
 import pytest
 import glob

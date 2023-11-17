@@ -1,6 +1,6 @@
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.modules.gpt4v import GPT4VPeopleDetectorModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.modules.gpt4v import GPT4VPeopleDetectorModule
 import pytest
 
 

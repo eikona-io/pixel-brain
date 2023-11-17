@@ -1,12 +1,12 @@
 from typing import List, Dict
 import torch
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.pipeline import PipelineModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.pipeline import PipelineModule
 from deepface import DeepFace
 import torch
 import numpy as np
-from pixel_brain.pre_processors.deepface import DeepfacePreprocessor
+from pixelbrain.pre_processors.deepface import DeepfacePreprocessor
 
 
 class FacenetEmbbedderModule(PipelineModule):

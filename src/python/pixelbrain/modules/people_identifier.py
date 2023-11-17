@@ -1,9 +1,9 @@
 from typing import List, Dict
 import torch
-from pixel_brain.database import Database
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.pipeline import PipelineModule
-from pixel_brain.modules.identifying_strategies import PairwiseIdentifyingStrategy, HDBSCANIdentifyingStrategy
+from pixelbrain.database import Database
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.pipeline import PipelineModule
+from pixelbrain.modules.identifying_strategies import PairwiseIdentifyingStrategy, HDBSCANIdentifyingStrategy
 
 
 class PeopleIdentifierModule(PipelineModule):

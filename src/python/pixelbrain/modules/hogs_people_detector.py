@@ -1,8 +1,8 @@
 import cv2
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.pipeline import PipelineModule
-from pixel_brain.pre_processors.hog_detector import HogsDetectorPreprocessor
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.pipeline import PipelineModule
+from pixelbrain.pre_processors.hog_detector import HogsDetectorPreprocessor
 from typing import List, Dict
 
 

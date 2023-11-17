@@ -1,7 +1,7 @@
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.modules.embedders import FacenetEmbbedderModule
-from pixel_brain.modules.people_identifier import PeopleIdentifierModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.modules.embedders import FacenetEmbbedderModule
+from pixelbrain.modules.people_identifier import PeopleIdentifierModule
 import re
 import pytest
 

@@ -1,12 +1,12 @@
 import base64
 import requests
-from pixel_brain.pipeline import PipelineModule
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
+from pixelbrain.pipeline import PipelineModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
 from typing import List, Dict
 import torch
 import logging
-from pixel_brain.utils import OPENAI_KEY, get_logger
+from pixelbrain.utils import OPENAI_KEY, get_logger
 
 
 logger = get_logger(__name__)

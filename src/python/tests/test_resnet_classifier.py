@@ -1,7 +1,7 @@
-from pixel_brain.modules.resnet_classifier import ResnetClassifierModule
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
-from pixel_brain.utils import PIXELBRAIN_PATH
+from pixelbrain.modules.resnet_classifier import ResnetClassifierModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.utils import PIXELBRAIN_PATH
 
 
 def test_resnet_classifier_module():

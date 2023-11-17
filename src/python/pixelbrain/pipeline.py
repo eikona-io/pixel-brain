@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from pixel_brain.database import Database
-from pixel_brain.data_loader import DataLoader
+from pixelbrain.database import Database
+from pixelbrain.data_loader import DataLoader
 import torch
 from typing import List, Union, Dict
 from tqdm import tqdm

@@ -1,7 +1,7 @@
 from typing import List
 import torch
 from torchvision import transforms
-from pixel_brain.pipeline import Preprocessor
+from pixelbrain.pipeline import Preprocessor
 
 
 class ResnetPreprocessor(Preprocessor):

@@ -4,9 +4,9 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 setup(
-    name='pixel_brain',
+    name='pixelbrain',
     version='0.1',
-    packages=find_packages(exclude=["tests", "tests/*"]),
+    packages=find_packages("src/python", exclude=["tests", "tests/*"]),
     description='A package for procssing image data using ML models',
     author='Omer Hacohen',
     author_email='omerhac94@gmail.com',
@@ -14,7 +14,7 @@ setup(
     install_requires=required,
     entry_points={
         'apps': [
-            'tag_identity = pixel_brain.apps.tag_identity:main',
+            'tag_identity = pixelbrain.apps.tag_identity:main',
         ],
     },
     python_requires='>=3.10',

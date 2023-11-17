@@ -16,8 +16,8 @@ def main():
     parser.add_argument('--export', type=str, default=None, help="[Optional] Path to export matadata database as csv to")
     parser.add_argument('--rm', action='store_true', default=False, help="[Optional] Flag whether to delete metadata and vector database after the run (defaults to False)")
 
-    from pixel_brain.database import Database
-    from pixel_brain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
+    from pixelbrain.database import Database
+    from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 
     args = parser.parse_args()
     print("\nCommand-line Arguments:")

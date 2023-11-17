@@ -1,5 +1,5 @@
-from pixel_brain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
-from pixel_brain.database import Database
+from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
+from pixelbrain.database import Database
 import pytest
 
 

@@ -1,7 +1,7 @@
 from torchvision import transforms
 from typing import List
 import torch
-from pixel_brain.pipeline import Preprocessor
+from pixelbrain.pipeline import Preprocessor
 
 
 class HogsDetectorPreprocessor(Preprocessor):

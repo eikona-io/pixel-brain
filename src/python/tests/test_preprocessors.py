@@ -1,6 +1,6 @@
 import glob
-from pixel_brain.pre_processors.resnet_preprocessor import ResnetPreprocessor
-from pixel_brain.pre_processors.hog_detector import HogsDetectorPreprocessor
+from pixelbrain.pre_processors.resnet_preprocessor import ResnetPreprocessor
+from pixelbrain.pre_processors.hog_detector import HogsDetectorPreprocessor
 from torchvision.io import read_image
 
 def test_resnet_preprocessor():

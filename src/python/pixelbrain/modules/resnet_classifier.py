@@ -1,11 +1,11 @@
 from torchvision.models import resnet50, ResNet50_Weights
-from pixel_brain.pipeline import PipelineModule
-from pixel_brain.pre_processors.resnet_preprocessor import ResnetPreprocessor
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
+from pixelbrain.pipeline import PipelineModule
+from pixelbrain.pre_processors.resnet_preprocessor import ResnetPreprocessor
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
 from typing import List, Tuple, Dict
 import torch
-from pixel_brain.modules.imagenet_classes import IMAGENET_CLASS_ID_TO_NAME, IMAGENET_CLASS_NAME_TO_ID
+from pixelbrain.modules.imagenet_classes import IMAGENET_CLASS_ID_TO_NAME, IMAGENET_CLASS_NAME_TO_ID
 import numpy as np
 
 

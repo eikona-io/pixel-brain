@@ -1,7 +1,7 @@
 import pytest
-from pixel_brain.database import Database
+from pixelbrain.database import Database
 import numpy as np
-from pixel_brain.utils import MONGODB_ATLAS_KEY
+from pixelbrain.utils import MONGODB_ATLAS_KEY
 
 def store_field_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id='store_field_test')

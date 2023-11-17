@@ -1,6 +1,6 @@
-from pixel_brain.modules.hogs_people_detector import HogsPeopleDetectorModule
-from pixel_brain.data_loader import DataLoader
-from pixel_brain.database import Database
+from pixelbrain.modules.hogs_people_detector import HogsPeopleDetectorModule
+from pixelbrain.data_loader import DataLoader
+from pixelbrain.database import Database
 
 
 def test_hogs_people_detector_module():
