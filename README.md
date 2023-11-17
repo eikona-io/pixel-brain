@@ -19,6 +19,9 @@ sudo apt-get install -y mongodb
 sudo systemctl start mongodb
 
 pip install git+https://github.com/omerhac/pixel-brain.git
+
+# to use GroundedSAMDectectionModule:
+pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git
 ```
 
 ## Usage
