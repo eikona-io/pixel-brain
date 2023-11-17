@@ -1,0 +1,16 @@
+[project]
+name = "pixelbrain"
+version = "0.1"
+description = "A package for processing image data using ML models"
+authors = ["Omer Hacohen <omerhac94@gmail.com>"]
+readme = "README.md"
+requires-python = ">=3.10"
+where = ["src"]
+exclude = ["tests*"]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.scripts]
+tag_identity = "pixelbrain.apps.tag_identity:main"
