@@ -6,6 +6,7 @@ import shutil
 import pandas as pd
 import os
 import math
+from tqdm import tqdm
 
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
@@ -191,7 +192,7 @@ class Database:
         """
         db = Database(database_id, mongo_key, mongo_vector_key)
         df = pd.read_csv(csv_file_path)
-        for _, row in df.iterrows():
+        for _, row in tqdm(df.iterrows(), desc="Reading CSV file", total=len(df)):
             image_id = row['_id']
             image_path = row['image_path']
             db.add_image(image_id, image_path)
