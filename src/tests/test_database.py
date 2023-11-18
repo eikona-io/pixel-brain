@@ -2,6 +2,8 @@ import pytest
 from pixelbrain.database import Database
 import numpy as np
 from pixelbrain.utils import MONGODB_ATLAS_KEY
+import tempfile
+
 
 def store_field_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id='store_field_test')
@@ -136,3 +138,31 @@ def test_find_images_local():
 
 def test_find_images_remote():
     find_images_run(MONGODB_ATLAS_KEY)
+    
+def test_create_database_from_csv(mongo_key=None):
+    # Create a new database
+    db = Database(database_id='create_db_from_csv_test', mongo_key=mongo_key)
+    # Add images and fields to the database
+    db.add_image('image1', 'path1')
+    db.store_field('image1', 'field1', 'value1')
+    db.add_image('image2', 'path2')
+    db.store_field('image2', 'field2', 'value2')
+    # Export the database to a CSV file
+    with tempfile.TemporaryDirectory() as tempdir:
+        db.export_to_csv(f'{tempdir}/test.csv')
+        # Create a new database from the CSV file
+        new_db = Database.create_from_csv(f'{tempdir}/test.csv', database_id='new_db')
+        # Compare the images and fields in the two databases
+        assert new_db.get_all_images() == db.get_all_images()
+        assert new_db.get_field('image1', 'field1') == db.get_field('image1', 'field1')
+        assert new_db.get_field('image2', 'field2') == db.get_field('image2', 'field2')
+    
+    # Delete the databases
+    db.delete_db()
+    new_db.delete_db()
+
+def test_create_database_from_csv_local():
+    test_create_database_from_csv()
+
+def test_create_database_from_csv_remote():
+    test_create_database_from_csv(MONGODB_ATLAS_KEY)

@@ -5,6 +5,7 @@ from typing import List, Tuple
 import shutil
 import pandas as pd
 import os
+import math
 
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
@@ -177,3 +178,27 @@ class Database:
 
         df = pd.DataFrame(self.get_all_images())
         df.to_csv(file_path, index=False)
+
+    @staticmethod
+    def create_from_csv(csv_file_path: str, database_id: str = 'db', mongo_key: str = None, mongo_vector_key: str = None):
+        """
+        Create a new database from a CSV file.
+
+        :param csv_file_path: The path of the CSV file to import.
+        :param database_id: The ID of the database to create.
+        :param mongo_key: The MongoDB connection string. if not provided will use local mongo.
+        :param mongo_key: The MongoDB connection string for vector database. if not provided will use local chromadb
+        """
+        db = Database(database_id, mongo_key, mongo_vector_key)
+        df = pd.read_csv(csv_file_path)
+        for _, row in df.iterrows():
+            image_id = row['_id']
+            image_path = row['image_path']
+            db.add_image(image_id, image_path)
+            for field_name, field_value in row.items():
+                if field_name not in ['_id', 'image_path']:
+                    if isinstance(field_value, float) and math.isnan(field_value):
+                        # nan's are auto generated for empty values in numpy
+                        continue
+                    db.store_field(image_id, field_name, field_value)
+        return db
