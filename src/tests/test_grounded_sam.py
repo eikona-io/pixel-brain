@@ -16,5 +16,3 @@ def test_grounded_sam_detector():
     for meta in metadata:
         assert "is_person" in meta
     database.delete_db()
-
-test_grounded_sam_detector()
