@@ -14,7 +14,7 @@ class DataLoader:
     """
     DataLoader class that loads and decodes images either from disk or S3
     """
-    def __init__(self, images_path, database: Database, batch_size=1, decode_images=True):
+    def __init__(self, images_path, database: Database, batch_size=1, decode_images=True, load_images=True):
         """
         Initializes the DataLoader with images path, database and batch size
 
@@ -22,6 +22,7 @@ class DataLoader:
         :param database: The database object to use for storing image metadata.
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
+        :param decode_images: Whether to load the images. Default is True.
         """
         self._images_path = images_path
         self._database = database
@@ -29,8 +30,9 @@ class DataLoader:
         self._image_paths = self._get_all_image_paths()
         self._tempdir = TemporaryDirectory()
         self._decode_images = decode_images
+        self._load_images = load_images
 
-    def __next__(self) -> List[Tuple[str, torch.Tensor]]:
+    def __next__(self) -> Tuple[List[str], List[torch.Tensor]]:
         """
         Returns the next batch of loaded images
         :returns:
@@ -44,10 +46,10 @@ class DataLoader:
                     # no data left
                     raise StopIteration
                 break
-            image_path = self._image_paths.pop(0)
+            image_path = os.path.realpath(self._image_paths.pop(0))
             image_id = f"{image_path}"
             self._database.add_image(image_id, image_path)
-            image = self._load_image(image_path)
+            image = self._load_image(image_path) if self._load_images else None
             image_batch.append(image)
             ids_batch.append(image_id)
         return ids_batch, image_batch
@@ -123,7 +125,9 @@ class DataLoader:
         
         filtered_paths = []
         for image_path in self._image_paths:
-            image_doc = self._database.find_images_with_value("image_path", image_path)
+            image_doc = self._database.find_images_with_value("image_path", os.path.realpath(image_path))
+            if not image_doc:
+                raise ValueError(f"Could not find image with image_path: {image_path}")
             assert len(image_doc) == 1, "Only one image doc should have a certain path"
             image_doc = image_doc[0]
             if field_name in image_doc:
