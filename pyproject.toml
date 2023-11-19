@@ -16,3 +16,5 @@ exclude = ["tests*"]
 
 [project.scripts]
 tag_identity = "pixelbrain.apps.tag_identity:main"
+filter_db = "pixelbrain.apps.filter_db:main"
+tag_zalando = "pixelbrain.apps.zalando.tag_zalando_metadata:main"

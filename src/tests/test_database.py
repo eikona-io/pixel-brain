@@ -214,3 +214,7 @@ def test_filter_unidentified_people():
     assert len(db.get_all_images()) == 2
     # Delete the database
     db.delete_db()
+
+db = Database.create_from_csv("/Users/nurithofesh/ws/pixel-brain/src/pixelbrain/apps/zalando/zalando_test.csv")
+db.filter_unidentified_people()
+db.delete_db()

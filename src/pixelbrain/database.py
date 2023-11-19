@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import chromadb
+from chromadb.config import Settings
 import numpy as np
 from typing import List, Tuple
 import shutil
@@ -31,7 +32,8 @@ class Database:
             self._vector_db = MongoClient(mongo_vector_key)[database_id]
         else:
             self._local_vector_db_path = f"{os.getcwd()}/chroma/{database_id}"
-            self._vector_db = chromadb.PersistentClient(self._local_vector_db_path)
+            chroma_settings = Settings(anonymized_telemetry=False)
+            self._vector_db = chromadb.PersistentClient(self._local_vector_db_path, settings=chroma_settings)
         self._db_id = database_id
 
     def add_image(self, image_id: str, image_path: str):
@@ -218,4 +220,4 @@ class Database:
             self._db.images.delete_many({field_name: {"$ne": field_value}})
 
     def filter_unidentified_people(self, is_person_field: str = 'is_person', identity_field: str = 'assigned_identity'):
-        self._db.images.delete_many({is_person_field: "True", identity_field: {"$exists": False}})
+        self._db.images.delete_many({is_person_field: {"$in": ["True", True]}, identity_field: {"$exists": False}})

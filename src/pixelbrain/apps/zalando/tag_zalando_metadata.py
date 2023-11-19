@@ -11,7 +11,7 @@ def main():
     
     args = parser.parse_args()
     print("\nCommand-line Arguments:")
-    print(f"Database Path: \n\t\t\t{args.dataset_path}")
+    print(f"Dataset Path: \n\t\t\t{args.dataset_path}")
     print(f"Read Path: \n\t\t\t{args.read_csv}")
     print(f"Export Path: \n\t\t\t{args.export}")
     print(f"Remove Database: \n\t\t\t{args.rm}\n")
