@@ -166,3 +166,51 @@ def test_create_database_from_csv_local():
 
 def test_create_database_from_csv_remote():
     test_create_database_from_csv(MONGODB_ATLAS_KEY)
+
+def filter_method_run(mongo_key=None):
+    # Create a new database
+    db = Database(database_id='test_db', mongo_key=mongo_key)
+    # Add images and fields to the database
+    db.add_image('image1', 'path1')
+    db.store_field('image1', 'field1', 'value1')
+    db.store_field('image1', 'field2', 'value2')
+    db.add_image('image2', 'path2')
+    db.store_field('image2', 'field1', 'value1')
+    db.add_image('image3', 'path3')
+    assert len(db.get_all_images()) == 3
+    # Test filter method with field_value provided
+    db.filter('field1', 'value1')
+    assert len(db.get_all_images()) == 2
+    # Test filter method with field_value=None
+    db.filter('field2')
+    assert len(db.get_all_images()) == 1
+    # Test follow-up instruction
+    db.filter('field2', 'value1')
+    assert len(db.get_all_images()) == 0
+    # Delete the database
+    db.delete_db()
+
+def test_filter_method_local():
+    filter_method_run()
+
+def test_filter_method_remote():
+    filter_method_run(MONGODB_ATLAS_KEY)
+
+def test_filter_unidentified_people():
+    # Create a new database
+    db = Database(database_id='unident_test_db')
+    # Add images and fields to the database
+    db.add_image('image1', 'path1')
+    db.store_field('image1', 'is_person', str(True))
+    db.store_field('image1', 'assigned_identity', 'person1')
+    db.add_image('image2', 'path2')
+    db.store_field('image2', 'is_person', 'False')
+    db.store_field('image2', 'assigned_identity', 'None')
+    db.add_image('image3', 'path3')
+    db.store_field('image3', 'is_person', 'True')
+    assert len(db.get_all_images()) == 3
+    # Test filter_unidentified_people method
+    db.filter_unidentified_people()
+    assert len(db.get_all_images()) == 2
+    # Delete the database
+    db.delete_db()

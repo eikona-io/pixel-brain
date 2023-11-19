@@ -203,3 +203,19 @@ class Database:
                         continue
                     db.store_field(image_id, field_name, field_value)
         return db
+
+    def filter(self, field_name: str, field_value=None):
+        """
+        Filter out rows from the MongoDB where field_name!=field_value.
+        If field_value is None, keep only rows which have field_name no matter what the field_value is.
+
+        :param field_name: The name of the field to filter.
+        :param field_value: The value of the field to filter. Default is None.
+        """
+        if field_value is None:
+            self._db.images.delete_many({field_name: {"$exists": False}})
+        else:
+            self._db.images.delete_many({field_name: {"$ne": field_value}})
+
+    def filter_unidentified_people(self, is_person_field: str = 'is_person', identity_field: str = 'assigned_identity'):
+        self._db.images.delete_many({is_person_field: "True", identity_field: {"$exists": False}})
