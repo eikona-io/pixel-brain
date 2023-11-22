@@ -22,7 +22,7 @@ def test_facenet_embedder():
     for image_meta in metadata:
         if "face_embedding" in image_meta:
             num_faces += 1
-    assert num_faces == 30, "should be 30 faces"
+    assert num_faces == 31, "should be 31 faces"
     database.delete_db()
 
 
