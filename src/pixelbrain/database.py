@@ -221,3 +221,22 @@ class Database:
 
     def filter_unidentified_people(self, is_person_field: str = 'is_person', identity_field: str = 'assigned_identity'):
         self._db.images.delete_many({is_person_field: {"$in": ["True", True]}, identity_field: {"$exists": False}})
+
+    def clone_row(self, source_image_id: str, target_image_id: str):
+        """
+        Clone a row values to another image.
+
+        :param source_image_id: The ID of the source image.
+        :param target_image_id: The ID of the target image.
+        """
+        source_image = self.find_image(source_image_id)
+        if source_image is None:
+            raise ValueError(f"Source image ID {source_image_id} does not exist in the database")
+
+        target_image = self.find_image(target_image_id)
+        if target_image is None:
+            raise ValueError(f"Target image ID {target_image_id} does not exist in the database")
+
+        for field_name, field_value in source_image.items():
+            if field_name not in ['_id', 'image_path']:
+                self.store_field(target_image_id, field_name, field_value)

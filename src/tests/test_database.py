@@ -215,6 +215,22 @@ def test_filter_unidentified_people():
     # Delete the database
     db.delete_db()
 
-db = Database.create_from_csv("/Users/nurithofesh/ws/pixel-brain/src/pixelbrain/apps/zalando/zalando_test.csv")
-db.filter_unidentified_people()
-db.delete_db()
+def clone_row_method_run(mongo_key=None):
+    # Create a new database
+    db = Database(database_id='test_db', mongo_key=mongo_key)
+    # Add images and fields to the database
+    db.add_image('image1', 'path1')
+    db.store_field('image1', 'field1', 'value1')
+    db.add_image('image2', 'path2')
+    # Clone row from image1 to image2
+    db.clone_row('image1', 'image2')
+    # Check if the field1 of image2 is the same as that of image1
+    assert db.get_field('image2', 'field1') == 'value1'
+    # Delete the database
+    db.delete_db()
+
+def test_clone_row_method_local():
+    clone_row_method_run()
+
+def test_clone_row_method_remote():
+    clone_row_method_run(MONGODB_ATLAS_KEY)
