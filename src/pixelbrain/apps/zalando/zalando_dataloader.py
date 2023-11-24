@@ -27,8 +27,8 @@ class ZalandoDataLoader(DataLoader):
             # its all images of tops
             self._database.store_field(image_id, 'clothing_type', 'top')
         else:
-            # its all images of females
-            self._database.store_field(image_id, 'gender', 'female')
+            # its all images of women
+            self._database.store_field(image_id, 'gender', 'woman')
         
         # the basename of the file is the same for cloth and person image
         # i.e. .../image/00.jpg is wearing .../cloth/00.jpg outfit
