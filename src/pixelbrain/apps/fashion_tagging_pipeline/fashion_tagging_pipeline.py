@@ -8,12 +8,29 @@ from pixelbrain.pipeline import DataProcessor, TaggingPipeline
 
 
 class FaceExtractionAutgmentationFilter(DataLoaderFilter):
+    """
+    This class represents a filter for face extraction augmentation. It is used to select a subset of images for face augmentation.
+    The filter selects up to a maximum number of images per identity from the images marked as 'personalization'.
+    """
     def __init__(self, identity_field_name: str = 'assigned_identity', max_nof_images: int = 3) -> None:
+        """
+        Initializes the FaceExtractionAutgmentationFilter with the given parameters.
+        
+        :param identity_field_name: The name of the field in the database that stores the assigned identity of an image.
+        :param max_nof_images: The maximum number of images to select per identity.
+        """
         super().__init__()
         self._identity_field_name = identity_field_name
         self._max_nof_images = max_nof_images
         
     def filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """
+        Filters the given list of image IDs and returns a subset of IDs for face augmentation.
+        
+        :param database: The database to use.
+        :param image_ids: The list of image IDs to filter.
+        :return: A list of image IDs selected for face augmentation.
+        """
         identities_meta = database.find_images_with_value(self._identity_field_name)
         unique_identities = {meta[self._identity_field_name] for meta in identities_meta}
         

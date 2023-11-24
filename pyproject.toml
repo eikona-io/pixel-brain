@@ -16,3 +16,4 @@ exclude = ["tests*"]
 
 [project.scripts]
 tag_identity = "pixelbrain.apps.tag_identity:main"
+tag_fashion = "pixelbrain.apps.fashion_tagging_pipeline.tag_fashion_dataset:main"
