@@ -2,6 +2,8 @@ from typing import List
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from tqdm import tqdm
+from pixelbrain.pipeline import DataProcessor
+from overrides import overrides
 
 
 class ZalandoDataLoader(DataLoader):
@@ -12,14 +14,10 @@ class ZalandoDataLoader(DataLoader):
     def __next__(self) -> List[str]:
         image_id, _ = super().__next__()
         image_id = image_id[0]
-        # zalando dataset dir structure is:
+        # zalando dataset dir structure is (train and test combined):
         # dataset_dir:
-        #   - train
-        #       - image: people images
-        #       - cloth: clothing images
-        #   - test
-        #       - image: people images
-        #       - cloth: clothing images
+        #   - image: people images
+        #   - cloth: clothing images
         
         # so we will search whether 'cloth' is in the image_path and tag accordingly
         image_path = self._database.get_field(image_id, 'image_path')
@@ -38,7 +36,7 @@ class ZalandoDataLoader(DataLoader):
         self._database.store_field(image_id, 'outfit_id', outfit_id)
 
 
-class ZalandoMetadataTagger:
+class ZalandoMetadataTagger(DataProcessor):
     """This is a wrapper class for tagging zalando metadata"""
     def __init__(self, dataset_path: str, database: Database) -> None:
         """
@@ -50,7 +48,8 @@ class ZalandoMetadataTagger:
         self._database = database
         self._dataset_path = dataset_path
 
-    def tag_metadata(self):
+    @overrides
+    def process(self):
         """
         Tags the metadata for people and clothing images in the dataset
         """

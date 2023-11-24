@@ -35,11 +35,10 @@ def people_identifier_module_run(strategy):
             same_identity_images = database.find_images_with_value("identity", assigned_identity)
             same_identity_image_paths = [meta['image_path'] for meta in same_identity_images]
             orig_identities = [get_identity_from_path(path) for path in same_identity_image_paths]
-            if strategy == "pairwise":
-                assert len(set(orig_identities)) == 1, "Not all original identities are the same"
-            else:
-                # hdbscan is less strict
-                assert len(set(orig_identities)) <= 2, "Not all original identities are the same"
+            assert len(set(orig_identities)) == 1, "Not all original identities are the same"
+            if strategy == "hdbscan":
+                # hdbscan should find all subject photos
+                assert len(set(orig_identities)) == 3, "Not all subject photos were found"
     database.delete_db()
 
 def test_people_identifier_module_pairwise_strategy():

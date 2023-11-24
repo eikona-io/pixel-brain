@@ -8,7 +8,17 @@ import boto3
 import glob
 import random
 from torchvision.io import read_image, read_file
+from abc import ABC, abstractmethod
 
+class DataLoaderFilter(ABC):
+    @abstractmethod
+    def filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """This defines a filter over the image_ids according to values in the database
+        :param: database: Database object with image metadata
+        :param: image_ids: list of image ids to filter from
+        :return filtered image_ids out of the given image_ids
+        """
+        pass
 
 class DataLoader:
     """
@@ -115,26 +125,36 @@ class DataLoader:
 
     def _read_image(self, image_path):
         return read_image(image_path) if self._decode_images else read_file(image_path)
-    
+
+    def _get_image_from_path(self, image_path: str) -> str:
+        image_fullpath = os.path.realpath(image_path)
+        image_doc = self._database.find_images_with_value("image_path", image_fullpath)
+        if not image_doc:
+            raise ValueError(f"Could not find image with image_path: {image_fullpath}")
+        assert len(image_doc) == 1, "Only one image doc should have a certain path"
+        return image_doc[0]
+
     def filter(self, field_name: str, field_value=None):
         """
         Filters images according to the values in database
         :param field_name: field to filter upon
         :param field_value: value to compare to. If none, will accept all field values (only check that field_name is present in metadata)
         """
-        
+
         filtered_paths = []
         for image_path in self._image_paths:
-            image_doc = self._database.find_images_with_value("image_path", os.path.realpath(image_path))
-            if not image_doc:
-                raise ValueError(f"Could not find image with image_path: {image_path}")
-            assert len(image_doc) == 1, "Only one image doc should have a certain path"
-            image_doc = image_doc[0]
+            image_doc = self._get_image_from_path(image_path)
             if field_name in image_doc:
                 if field_value is None:
                     filtered_paths.append(image_path)
                 else:
                     if image_doc[field_name] == field_value:
                         filtered_paths.append(image_path)
-            
+
         self._image_paths = filtered_paths
+
+    def custom_filter(self, filter: DataLoaderFilter):
+        image_ids = [self._get_image_from_path(path)['_id'] for path in self._image_paths]
+        filtered_ids = filter.filter(self._database, image_ids)
+        self._image_paths = [self._database.find_image(id)['image_path'] for id in filtered_ids]
+

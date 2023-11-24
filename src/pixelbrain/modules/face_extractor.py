@@ -63,9 +63,11 @@ class FaceExtractorModule(PipelineModule):
                 face_image_path = self._save_image(extracted_face, image_id)
 
                 # add to db
-                self._database.add_image(face_image_path, face_image_path)
+                new_image_id = f'{image_id}_face'
+                self._database.add_image(new_image_id, face_image_path)
                 if self._clone_metadata:
-                    self._database.clone_row(image_id, face_image_path)
+                    self._database.clone_row(image_id, new_image_id)
+                self._database.store_field(new_image_id, 'is_augmented_face', 'True')
 
             except Exception as err:
                 # no face detetectad raises an error

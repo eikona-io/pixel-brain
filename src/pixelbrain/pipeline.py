@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from pixelbrain.database import Database
-from pixelbrain.data_loader import DataLoader
+from pixelbrain.data_loader import DataLoader, DataLoaderFilter
 import torch
 from typing import List, Union, Dict
 from tqdm import tqdm
+from overrides import overrides
+
 
 class Preprocessor(ABC):
     """
@@ -21,14 +23,21 @@ class Preprocessor(ABC):
         pass
 
 
-class PipelineModule(ABC):
+class DataProcessor(ABC):
+    """This is an anbstract for any class that processes data and writes the metadata Database to inherit from."""
+    @abstractmethod
+    def process(self):
+        pass
+
+
+class PipelineModule(DataProcessor):
     """
     Abstract base class for pipeline modules.
     """
     def __init__(self, data: DataLoader, 
                  database: Database,
                  pre_processor: Preprocessor = None,
-                 filters: Dict[str, str] = None):
+                 filters: Union[Dict[str, str], DataLoaderFilter] = None):
         """
         Initialize the pipeline module.
         A PipelineModule is ephemeral in the sense that it's process() function can be called only once and then a new one must be constructed.
@@ -37,7 +46,7 @@ class PipelineModule(ABC):
         :param database: Database object for storing processed tags
         :param pre_processor: Preprocessor object to preprocess the data, if None, preprocessing won't be done.
         :param batch_size: Size of the batch to be processed
-        :param filters: (field_name, field_value) to apply on the dataloader before starting it processing
+        :param filters: (field_name, field_value) to apply on the dataloader before starting it processing (or a custom filter)
         """
         self._database = database
         self._pre_processor = pre_processor
@@ -45,6 +54,7 @@ class PipelineModule(ABC):
         self._filters = filters
         self._processed_called = False
 
+    @overrides
     def process(self):
         """
         Process the data and store tags.
@@ -88,10 +98,14 @@ class PipelineModule(ABC):
         pass
 
     def _apply_filters(self):
-        for field_id, field_value in self._filters.items():
-            self._data.filter(field_id, field_value)
+        if isinstance(self._filters, DataLoaderFilter):
+            self._data.custom_filter(self._filters)
+        else:
+            for field_id, field_value in self._filters.items():
+                self._data.filter(field_id, field_value)
 
-class TaggingPipeline():
+
+class TaggingPipeline(DataProcessor):
     """
     Class for tagging pipeline.
     """
@@ -105,15 +119,15 @@ class TaggingPipeline():
         """
         self._images_path = images_path
         self._database = database
-        self._modules = None
+        self._data_processors: List[DataProcessor] = None
         
-
+    @overrides
     def process(self):
         """
         Process the data using the defined modules and store the result in the database.
         """
 
-        if self._modules is None:
+        if self._data_processors is None:
             raise ValueError("_modules was not initialized for the pipeline")
-        for module in self._modules:
+        for module in self._data_processors:
             module.process()

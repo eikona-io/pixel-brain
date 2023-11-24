@@ -14,7 +14,7 @@ class PeopleIdentifierModule(PipelineModule):
                  database: Database,
                  vector_field_name: str,
                  identity_field_name: str = 'identity',
-                 strategy: str = 'pairwise',
+                 strategy: str = 'hdbscan',
                  distance_threshold: int = 290,
                  pairwise_exclude_group: str = None,
                  filters: Dict[str, str] = None):

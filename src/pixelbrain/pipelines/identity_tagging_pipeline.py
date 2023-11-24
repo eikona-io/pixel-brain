@@ -12,7 +12,7 @@ class IdentityTaggingPipeline(TaggingPipeline):
                  database: Database,
                  identity_field_name: str = 'assigned_identity',
                  apply_people_detector: bool = True,
-                 identifying_strategy: str = 'pairwise',
+                 identifying_strategy: str = 'hdbscan',
                  pairwise_exclude_group: str = None):
         super().__init__(images_path, database)
         
@@ -26,9 +26,9 @@ class IdentityTaggingPipeline(TaggingPipeline):
         identify_filters = {"face_embedding": None} # process only images with faces
 
         # optional module
-        self._modules = [GPT4VPeopleDetectorModule(people_detector_data, self._database)] if apply_people_detector else []
+        self._data_processors = [GPT4VPeopleDetectorModule(people_detector_data, self._database)] if apply_people_detector else []
         # constant modules
-        self._modules.extend([
+        self._data_processors.extend([
             FacenetEmbbedderModule(embedder_data, self._database, embedding_filters),
             PeopleIdentifierModule(people_identifier_data, 
                                    self._database,
