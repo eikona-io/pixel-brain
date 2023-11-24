@@ -53,9 +53,8 @@ class ZalandoMetadataTagger(DataProcessor):
         """
         Tags the metadata for people and clothing images in the dataset
         """
-        people_dataloader = ZalandoDataLoader(f'{self._dataset_path}/image', self._database)
-        cloth_dataloader = ZalandoDataLoader(f'{self._dataset_path}/cloth', self._database)
+        dataloader = ZalandoDataLoader(self._dataset_path, self._database)
         
         # tag
-        for _ in tqdm(zip(people_dataloader, cloth_dataloader), desc="Tagging Zalando Metadata", total=len(people_dataloader)):
+        for _ in tqdm(dataloader, desc="Tagging Zalando Metadata", total=len(dataloader)):
             pass
