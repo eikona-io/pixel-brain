@@ -24,11 +24,11 @@ class DataLoader:
     """
     DataLoader class that loads and decodes images either from disk or S3
     """
-    def __init__(self, images_path, database: Database, batch_size=1, decode_images=True, load_images=True):
+    def __init__(self, images_path: str, database: Database, batch_size=1, decode_images=True, load_images=True):
         """
         Initializes the DataLoader with images path, database and batch size
 
-        :param images_path: The path to the images. Can be a local path or an S3 path.
+        :param images_path: The path to the images. Can be a local path, S3 path or web URL.
         :param database: The database object to use for storing image metadata.
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
@@ -97,7 +97,7 @@ class DataLoader:
         """
         return self._read_image(image_path)
 
-    def _get_all_image_paths(self):
+    def _get_all_image_paths(self) -> List[str]:
         """
         Gets all image paths from the database if remote, or uses glob if local
         """
@@ -157,4 +157,3 @@ class DataLoader:
         image_ids = [self._get_image_from_path(path)['_id'] for path in self._image_paths]
         filtered_ids = filter.filter(self._database, image_ids)
         self._image_paths = [self._database.find_image(id)['image_path'] for id in filtered_ids]
-
