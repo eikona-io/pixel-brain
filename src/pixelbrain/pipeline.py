@@ -55,7 +55,7 @@ class PipelineModule(DataProcessor):
         self._processed_called = False
 
     @overrides
-    def process(self):
+    def process(self, *args, **kwargs):
         """
         Process the data and store tags.
         """
@@ -70,9 +70,9 @@ class PipelineModule(DataProcessor):
                 image_batch = self._pre_processor(image_batch)
             batch_results = self._process(image_ids, image_batch)
             if batch_results is not None:
-                self._post_process_batch(*batch_results)
+                self._post_process_batch(*batch_results, *args, **kwargs)
         
-        self._post_process()
+        self._post_process(*args, **kwargs)
         self._processed_called = True
 
     @abstractmethod
