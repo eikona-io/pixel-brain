@@ -8,7 +8,7 @@ import pandas as pd
 import os
 import math
 from tqdm import tqdm
-
+from pinecone import Pinecone, Index
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
 
@@ -16,20 +16,21 @@ class Database:
     """
     This class is used to interact with the MongoDB database.
     """
-    def __init__(self, database_id: str = 'db', mongo_key: str = None, mongo_vector_key: str = None):
+    def __init__(self, database_id: str = 'db', mongo_key: str = None, pinecone_vector_key: str = None):
         """
         Initialize the Database class.
 
         :param mongo_key: The MongoDB connection string. if not provided will use local mongo.
-        :param mongo_key: The MongoDB connection string for vector database. if not provided will use local chromadb
+        :param pinecone_vector_key: The pinecone connection string for vector database. if not provided will use local chromadb
         :param database_id: The ID of the database to connect to.
         """
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
         else:
             self._db = MongoClient()[database_id]
-        if mongo_vector_key:
-            self._vector_db = MongoClient(mongo_vector_key)[database_id]
+        if pinecone_vector_key:
+            # TODO: omerh -> change to creating a new index once we move out of free version
+            self._vector_db = Pinecone(pinecone_vector_key).Index(database_id)
         else:
             self._local_vector_db_path = f"{os.getcwd()}/chroma/{database_id}"
             chroma_settings = Settings(anonymized_telemetry=False)
@@ -68,10 +69,15 @@ class Database:
             self._db.images.update_one({'_id': image_id}, {'$set': {field_name: field_value}}, upsert=True)
 
     def _store_vector(self, image_id : str, field_name: str, embedding: np.ndarray):
-        if isinstance(self._vector_db, MongoClient):
-            assert False, "Remote vector store not implemented yet"
+        index_fqn = f"{self._db_id}-{field_name}"
+        if isinstance(self._vector_db, Index):
+            vec = {
+                "id": image_id,
+                "values": embedding.tolist()
+            }
+            self._vector_db.upsert(vectors=[vec], namespace=index_fqn)
+            self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:pinecone/{self._db_id}")
         else:
-            index_fqn = f"{self._db_id}-{field_name}"
             index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
             index.upsert(image_id, embedding.tolist())
             self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}")
@@ -90,8 +96,14 @@ class Database:
         return self._query_vector(index_fqn, query, n_results)
 
     def _query_vector(self, index_fqn: str, query: np.ndarray, n_results):
-        if isinstance(self._vector_db, MongoClient):
-            assert False, "Remote vector store not implemented yet"
+        if isinstance(self._vector_db, Index):
+            try:
+                results = self._vector_db.query(vector=query.tolist(), namespace=index_fqn, top_k=n_results)
+            except ValueError as err:
+                raise RuntimeError(f"Cant find {index_fqn} in vector database")
+            results_meta = [self.find_image(match['id']) for match in results['matches']]
+            results_dists = [match['score'] for match in results['matches']]
+            return results_meta, results_dists
         else:
             try:
                 index = self._vector_db.get_collection(index_fqn)
@@ -125,9 +137,10 @@ class Database:
     def delete_db(self):
         """Delete database (use with caution)"""
         self._db.client.drop_database(self._db_id)
-        if not isinstance(self._vector_db, MongoClient):
+        if not isinstance(self._vector_db, Index):
             # TODO support remote vector store
             shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
+            
 
     def get_field(self, image_id: str, field_name: str):
         """
@@ -145,17 +158,25 @@ class Database:
         field_value = image_doc[field_name]
 
         if field_value.find(IN_VECTOR_STORE_STR) != -1:
-            if isinstance(self._vector_db, MongoClient):
-                raise ValueError(f"{IN_VECTOR_STORE_STR} value is reserved for local vector store")
             index_fqn = f"{self._db_id}-{field_name}"
-            try:
-                index = self._vector_db.get_collection(index_fqn)
-            except ValueError as err:
-                raise RuntimeError(f"Cant find {index_fqn} in vector database, maybe it did not persist?")
+            if isinstance(self._vector_db, Index):
+                result = self._vector_db.fetch(ids=[image_id], namespace=index_fqn)
+                if result:
+                    result_id = list(result['vectors'].keys())
+                    assert len(result_id) == 1, f"found more then 1 vector with id {image_id}"
+                    field_value = result['vectors'][result_id[0]]['values']
+                else:
+                    raise ValueError(f"Vector for {image_id} not found in {index_fqn}")
+            else:
+                try:
+                    index = self._vector_db.get_collection(index_fqn)
+                except ValueError as err:
+                    raise RuntimeError(f"Cant find {index_fqn} in vector database, maybe it did not persist?")
 
-            field_value = index.get(image_id, include=["embeddings"])['embeddings']
-            assert len(field_value) == 1
-            field_value = np.array(field_value[0])
+                field_value = index.get(image_id, include=["embeddings"])['embeddings']
+                assert len(field_value) == 1
+                field_value = field_value[0]
+            field_value = np.array(field_value)
         return field_value
 
     def find_images_with_value(self, field_name: str, value=None):

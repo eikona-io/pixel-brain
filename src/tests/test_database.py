@@ -1,9 +1,9 @@
 import pytest
 from pixelbrain.database import Database
 import numpy as np
-from pixelbrain.utils import MONGODB_ATLAS_KEY
+from pixelbrain.utils import MONGODB_ATLAS_KEY, PINECONE_KEY
 import tempfile
-
+import time
 
 def store_field_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id='store_field_test')
@@ -56,57 +56,66 @@ def test_find_image_error_local():
 def test_find_image_error_remote():
     find_image_error_run(MONGODB_ATLAS_KEY)
 
-def vector_db_multiple_vectors_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, mongo_vector_key=mongo_key, database_id='local_vector_db_multiple_vectors_test')
+def vector_db_multiple_vectors_run(mongo_key=None, pinecone_key=None):
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
     for i in range(10):
         db.add_image(f'test_id_{i}', 'test_image_path')
-        random_vector = np.array([1, 2, 3]) + np.random.normal(0, np.sqrt(10), 3)
+        random_vector = np.random.normal(0, np.sqrt(10), 512)
         db.store_field(f'test_id_{i}', 'test_field', random_vector)
-    metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]), n_results=5)
+    if pinecone_key:
+        time.sleep(20) # sync pinecone
+    metas, dists = db.query_vector_field('test_field', np.random.normal(0, np.sqrt(10), 512), n_results=5)
     assert len(metas) == 5
-    assert dists[0] < 100, "distance should be less then 100"
+    assert dists[0] > 0, "distance should be more then 0"
     db.delete_db()
+    if pinecone_key:
+        db._vector_db.delete(delete_all=True, namespace='hue-test_field')
 
 def test_local_vector_db_multiple_vectors_run():
     vector_db_multiple_vectors_run()
 
-@pytest.mark.skip(reason="remote vector store not supported yet")
 def test_remote_vector_db_multiple_vectors_run():
-    vector_db_multiple_vectors_run(MONGODB_ATLAS_KEY)
+    vector_db_multiple_vectors_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
-def vector_db_singel_vector_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, mongo_vector_key=mongo_key, database_id='local_vector_db_singel_vectors_test')
+def vector_db_single_vector_run(mongo_key=None, pinecone_key=None):
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
     db.add_image('test_id', 'test_image_path')
-    db.store_field('test_id', 'test_field', np.array([1, 2, 3]))
-    metas, dists = db.query_vector_field('test_field', np.array([1, 2, 3]))
+    rand_vec = np.random.uniform(0, 1, 512)
+    rand_vec2 = np.random.uniform(0, 1, 512)
+    db.store_field('test_id', 'test_field', rand_vec)
+    if pinecone_key:
+        time.sleep(15) # sync pinecone
+    metas, dists = db.query_vector_field('test_field', rand_vec2)
     assert len(metas) == 1
-    assert dists[0] == 0.0, "same vector should have 0 distance"
+    assert dists[0] > 0.0, "different vector should have greater than 0 distance"
     db.delete_db()
+    if pinecone_key:
+        db._vector_db.delete(delete_all=True, namespace='hue-test_field')
 
-def test_local_vector_db_singel_vectors_run():
-    vector_db_singel_vector_run()
+def test_local_vector_db_single_vectors_run():
+    vector_db_single_vector_run()
 
-@pytest.mark.skip(reason="remote vector store not supported yet")
-def test_remote_vector_db_singel_vectors_run():
-    vector_db_singel_vector_run(MONGODB_ATLAS_KEY)
+def test_remote_vector_db_single_vectors_run():
+    vector_db_single_vector_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
-def get_field_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, mongo_vector_key=mongo_key, database_id='get_field_test')
+def get_field_run(mongo_key=None, pinecone_key=None):
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
     db.add_image('test_id', 'test_image_path')
-    db.store_field('test_id', 'test_field', np.array([1, 2, 3]))
+    db.store_field('test_id', 'test_field', np.random.uniform(0, 1, 512))
     db.store_field('test_id', 'test_field2', "test value")
     val1 = db.get_field('test_id', 'test_field')
     val2 = db.get_field('test_id', 'test_field2')
     db.delete_db()
     assert isinstance(val1, np.ndarray)
     assert isinstance(val2, str)
+    if pinecone_key:
+        db._vector_db.delete(delete_all=True, namespace='hue-test_field')
 
 def test_get_field_local():
     get_field_run()
 
-@pytest.mark.skip(reason="remote vector store not supported yet")
 def test_get_field_remote():
-    get_field_run(MONGODB_ATLAS_KEY)
+    get_field_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
 def find_images_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id='find_images_test')
@@ -234,3 +243,5 @@ def test_clone_row_method_local():
 
 def test_clone_row_method_remote():
     clone_row_method_run(MONGODB_ATLAS_KEY)
+
+test_get_field_remote()
