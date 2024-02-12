@@ -10,7 +10,7 @@ def main():
     parser.add_argument('--rm', action='store_true', default=True, help="[Optional] Flag whether to delete metadata and vector database after the run (defaults to False)")
 
     from pixelbrain.database import Database
-    from pixelbrain.pipelines.hue_processing_pipeline import HueProcessingPipeline
+    from pixelbrain.pipelines.face_similarity_pipeline import HueProcessingPipeline
 
     args = parser.parse_args()
     print("\nCommand-line Arguments:")

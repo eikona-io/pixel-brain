@@ -7,7 +7,7 @@ import requests
 import pickle
 from cloudinary.api_client.execute_request import Response
 from cloudinary.exceptions import AuthorizationRequired
-from pixelbrain.apps.cloudinary_dataloader import CloudinaryDataLoader
+from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 import os
 
 

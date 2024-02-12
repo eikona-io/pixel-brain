@@ -1,5 +1,5 @@
-from pymongo import MongoClient
 from pixelbrain.mongo_pipelines import generate_aggregation_pipeline
+from pymongo import MongoClient, ASCENDING, DESCENDING
 import chromadb
 from chromadb.config import Settings
 import numpy as np
@@ -180,18 +180,22 @@ class Database:
             field_value = np.array(field_value)
         return field_value
 
-    def find_images_with_value(self, field_name: str, value=None):
+    def find_images_with_value(self, field_name: str, value=None, sort_by=None, ascending=True):
         """
-        Find all images in the database that have a specific field value.
+        Find all images in the database that have a specific field value, with an optional sorting.
 
         :param field_name: The name of the field to find.
         :param value: The value of the field to find. If None, find all images that have this field.
-        :return: A list of all image documents that match the field value.
+        :param sort_by: The field name to sort the results by. If None, no sorting is applied.
+        :param ascending: Determines the sorting order. True for ascending, False for descending.
+        :return: A list of all image documents that match the field value, optionally sorted.
         """
-        if value is None:
-            return list(self._db.images.find({field_name: {"$exists": True}}))
+        query = {field_name: {"$exists": True}} if value is None else {field_name: value}
+        sort_order = ASCENDING if ascending else DESCENDING
+        if sort_by:
+            return list(self._db.images.find(query).sort(sort_by, sort_order))
         else:
-            return list(self._db.images.find({field_name: value}))
+            return list(self._db.images.find(query))
 
     def aggregate_on_field(self, field_name: str, sort_order: int = -1) -> List[Dict[str, Any]]:
         """
@@ -214,11 +218,11 @@ class Database:
         df = pd.DataFrame(self.get_all_images())
         df.to_csv(file_path, index=False)
 
+
     @staticmethod
     def create_from_csv(csv_file_path: str, database_id: str = 'db', mongo_key: str = None, mongo_vector_key: str = None):
         """
         Create a new database from a CSV file.
-
         :param csv_file_path: The path of the CSV file to import.
         :param database_id: The ID of the database to create.
         :param mongo_key: The MongoDB connection string. if not provided will use local mongo.

@@ -16,8 +16,9 @@ class FacenetEmbbedderModule(PipelineModule):
     Before embedding, the face is detected by Retinaface and extracted from the image.
     This is a very naive implementation using deepface library. it can be greatly improved.
     """
-    def __init__(self, data: DataLoader, database: Database, filters: Dict[str, str] = None):
+    def __init__(self, data: DataLoader, database: Database, filters: Dict[str, str] = None, embedding_field_name="face_embedding"):
         super().__init__(data, database, DeepfacePreprocessor(), filters)
+        self._embedding_field_name = embedding_field_name
     
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
@@ -37,7 +38,7 @@ class FacenetEmbbedderModule(PipelineModule):
                     # more then one face
                     # we don't want this image
                     break
-                self._database.store_field(image_id, "face_embedding", np.array(face_embedding[0]['embedding']))
+                self._database.store_field(image_id, self._embedding_field_name, np.array(face_embedding[0]['embedding']))
             except Exception as err:
                 # no face detetectad raises an error
                 pass

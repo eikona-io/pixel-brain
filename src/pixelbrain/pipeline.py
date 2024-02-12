@@ -131,3 +131,10 @@ class TaggingPipeline(DataProcessor):
             raise ValueError("_modules was not initialized for the pipeline")
         for module in self._data_processors:
             module.process()
+        self._post_process()
+    
+    def _post_process(self):
+        """
+        Optional method for child classes to implement some post processing logic (after all images have ben processed)
+        """
+        pass
