@@ -3,14 +3,35 @@ from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.pipeline import TaggingPipeline
 from pixelbrain.modules.face_extractor import FaceExtractorModule
+from pixelbrain.apps.cloudinary_dataloader import CloudinaryDataLoader
+from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
+from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
+from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
+from pixelbrain.utils import create_timestamp
+from os.path import join
+from os import makedirs
+from uuid import uuid4
 
 
 class HueProcessingPipeline(TaggingPipeline):
-    def __init__(self, images_path: str, 
-                 database: Database):
-        super().__init__(images_path, database)
+    def __init__(self,
+                 local_results_dir: str,
+                 dataloader: DataLoader,
+                 user_id: str,
+                 maximal_medium_ratio: float = 1,
+                 maximal_wide_ratio: float = 1,
+                 include_background: bool = False):
+        super().__init__(local_results_dir, None)
         
-        # might parameterize the batch sizes in the future
-        face_extractor_data = DataLoader(images_path, self._database, batch_size=1, decode_images=True)
+        current_run_results_dir = join(local_results_dir, create_timestamp())
+        makedirs(current_run_results_dir, exist_ok=True)
+        identity_db = Database(database_id=uuid4().hex)
+        # identity_db.export_to_csv('/home/ubuntu/pixel-brain/csvs/test_identity.csv')
 
-        self._data_processors = [FaceExtractorModule(face_extractor_data, database, h_ratio=0.4, w_ratio=0.4)]
+        self._data_processors = [
+            GroundedSAMDetectorModule(dataloader, dataloader._database, 'person', 'foobar', results_dir=current_run_results_dir,
+                                      maximal_medium_ratio=maximal_medium_ratio, maximal_wide_ratio=maximal_wide_ratio,
+                                      include_background=include_background),
+            IdentityTaggingPipeline(current_run_results_dir, identity_db, apply_people_detector=False),
+            UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity')
+        ]

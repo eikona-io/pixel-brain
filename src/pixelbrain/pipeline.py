@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pixelbrain.database import Database
 from pixelbrain.data_loader import DataLoader, DataLoaderFilter
 import torch
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 from tqdm import tqdm
 from overrides import overrides
 
@@ -109,7 +109,7 @@ class TaggingPipeline(DataProcessor):
     """
     Class for tagging pipeline.
     """
-    def __init__(self, images_path: str, database: Database, modules: List[PipelineModule] = None):
+    def __init__(self, images_path: str, database: Optional[Database], modules: List[PipelineModule] = None):
         """
         Initialize the tagging pipeline.
         

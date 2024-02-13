@@ -1,4 +1,3 @@
-from typing import List
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.pipeline import TaggingPipeline

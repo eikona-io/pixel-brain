@@ -24,7 +24,8 @@ class DataLoader:
     """
     DataLoader class that loads and decodes images either from disk or S3
     """
-    def __init__(self, images_path: str, database: Database, batch_size=1, decode_images=True, load_images=True):
+    def __init__(self, images_path: str, database: Database, batch_size=1, 
+                 decode_images=True, load_images=True, reload_images_if_first_iteration: bool = True):
         """
         Initializes the DataLoader with images path, database and batch size
 
@@ -33,6 +34,7 @@ class DataLoader:
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
         :param decode_images: Whether to load the images. Default is True.
+        :param reload_images_if_first_iteration: Reloads images from the source upon __next__() if it's the first iteration. This is used when data processors are piped and data is changing between processors.
         """
         self._images_path = images_path
         self._database = database
@@ -41,6 +43,7 @@ class DataLoader:
         self._tempdir = TemporaryDirectory()
         self._decode_images = decode_images
         self._load_images = load_images
+        self._is_first_iteration = True
 
     def __next__(self) -> Tuple[List[str], List[torch.Tensor]]:
         """
@@ -49,6 +52,9 @@ class DataLoader:
         ids_batch: List[str]
         image_batch: List[torch.Tensor]
         """
+        if self._is_first_iteration:
+            self._is_first_iteration = False
+            self._image_paths = self._get_all_image_paths()
         image_batch, ids_batch = [], []
         for _ in range(self._batch_size):
             if not self._image_paths:
