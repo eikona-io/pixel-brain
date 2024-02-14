@@ -33,3 +33,4 @@ torch==2.1.0
 matplotlib==3.8.1
 cloudinary==1.38.0
 pinecone-client==3.0.2
+modal==0.56.4254

@@ -46,6 +46,9 @@ class PeopleIdentifierModule(PipelineModule):
         :param image_ids: List of image IDs
         :param processed_image_batch: List of processed image tensors
         """
+        if not all([self._database.does_image_have_field(image_id, self._vector_field_name) for image_id in image_ids]):
+            # Not a face
+            return
         image_vecs = [self._database.get_field(image_id, self._vector_field_name) for image_id in image_ids]
         self._identify_strategy.process(image_ids, image_vecs)
 

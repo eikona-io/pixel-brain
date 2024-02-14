@@ -1,8 +1,9 @@
 from pymongo import MongoClient
+from pixelbrain.mongo_pipelines import generate_aggregation_pipeline
 import chromadb
 from chromadb.config import Settings
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 import shutil
 import pandas as pd
 import os
@@ -192,6 +193,16 @@ class Database:
         else:
             return list(self._db.images.find({field_name: value}))
 
+    def aggregate_on_field(self, field_name: str, sort_order: int = -1) -> List[Dict[str, Any]]:
+        """
+        Aggregate ids by a given field to a list, and sort by count if required.
+        :param field_name: The field name to aggregate
+        :param sort_order: The sort order of the aggregation. -1: descending, 1: ascending, 0: no sort
+        :return: The aggregation result.
+        """
+        aggregation_pipeline = generate_aggregation_pipeline(field_name, sort_order)
+        return list(self._db.images.aggregate(aggregation_pipeline))
+
 
     def export_to_csv(self, file_path: str):
         """
@@ -261,3 +272,14 @@ class Database:
         for field_name, field_value in source_image.items():
             if field_name not in ['_id', 'image_path']:
                 self.store_field(target_image_id, field_name, field_value)
+
+    def does_image_have_field(self, image_id: str, field_name: str) -> bool:
+        """
+        Check if an image has a specific field.
+
+        :param image_id: The ID of the image.
+        :param field_name: The name of the field to check.
+        :return: True if the image has the field, False otherwise.
+        """
+        image_doc = self.find_image(image_id)
+        return field_name in image_doc
