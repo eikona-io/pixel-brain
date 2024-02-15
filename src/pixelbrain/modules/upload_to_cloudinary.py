@@ -38,13 +38,6 @@ class UploadToCloudinaryModule(DataProcessor):
 
     @overrides
     def process(self):
-        """
-        Process the data using grounded sam for detecting the specific string in the photos
-        and store the results in the database under the specific metadata field.
-        
-        :param image_ids: List of image ids
-        :param processed_image_batch: Batch of preprocessed images
-        """
         # Get the image ids you want to upload
         if self._filtering_field_name is None:
             upload_image_paths = [d['_id'] for d in self._database.get_all_images()]

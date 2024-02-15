@@ -48,7 +48,9 @@ class CloudinaryDataLoader(DataLoader):
                 break
             image_url = self._image_paths.pop(0)
             image_id = image_url.split('/')[-1].split('.')[0]
+            image_public_id = cloudinary.api.resource(image_url)['public_id']
             self._database.add_image(image_id, image_url)
+            self._database.store_field(image_id, "cloudinary_public_id", image_public_id)
             image = self._load_image(image_url) if self._load_images else None
             image_batch.append(image)
             ids_batch.append(image_id)
