@@ -34,11 +34,15 @@ class FacenetEmbbedderModule(PipelineModule):
                                                     model_name="Facenet512", 
                                                     detector_backend="retinaface",
                                                     enforce_detection=True)
+                print(face_embedding)
                 if len(face_embedding) != 1:
                     # more then one face
                     # we don't want this image
                     break
+                print(self._embedding_field_name)
                 self._database.store_field(image_id, self._embedding_field_name, np.array(face_embedding[0]['embedding']))
             except Exception as err:
                 # no face detetectad raises an error
+                print("no face detected")
                 pass
+
