@@ -58,8 +58,6 @@ class CloudinaryFaceSimilartyScorer:
             sort_by=self._scoring_field_name,
             ascending=True,
         )
-        self._logger.info(results_meta)
-        self._logger.info(self._database.get_all_images())
         if self._database_created:
             self._database.delete_db()
         
