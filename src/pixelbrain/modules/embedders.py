@@ -29,7 +29,9 @@ class FacenetEmbbedderModule(PipelineModule):
         :param processed_image_batch: Batch of preprocessed images
         """
         for image_id, image in zip(image_ids, processed_image_batch):
+            print(image_id)
             try:
+                print("before")
                 face_embedding = DeepFace.represent(image.numpy(), 
                                                     model_name="Facenet512", 
                                                     detector_backend="retinaface",
