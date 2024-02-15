@@ -36,6 +36,7 @@ class FacenetEmbbedderModule(PipelineModule):
                                                     model_name="Facenet512", 
                                                     detector_backend="retinaface",
                                                     enforce_detection=True)
+                print("after")
                 print(face_embedding)
                 if len(face_embedding) != 1:
                     # more then one face
