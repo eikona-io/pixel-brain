@@ -57,7 +57,13 @@ class CloudinaryFaceSimilartyScorer:
             sort_by=self._scoring_field_name,
             ascending=True,
         )
-        if self._database_created:
-            self._database.delete_db()
+        print(results_meta)
+        print(self._database.get_all_images())
+        # if self._database_created:
+        #     self._database.delete_db()
         
         return [result['cloudinary_public_id'] for result in results_meta]
+
+# i = CloudinaryFaceSimilartyScorer("user_images/generated_images/demo/1707663552586", "user_photos/1707663552586").process()
+# print(i)
+
