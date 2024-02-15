@@ -46,9 +46,9 @@ class CloudinaryDataLoader(DataLoader):
                     # no data left
                     raise StopIteration
                 break
-            image_url = self._image_paths.pop(0)
+            image_public_id = self._image_paths.pop(0)
+            image_url = cloudinary.CloudinaryImage(image_public_id).build_url()
             image_id = image_url.split('/')[-1].split('.')[0]
-            image_public_id = cloudinary.api.resource(image_url)['public_id']
             self._database.add_image(image_id, image_url)
             self._database.store_field(image_id, "cloudinary_public_id", image_public_id)
             image = self._load_image(image_url) if self._load_images else None
@@ -59,17 +59,13 @@ class CloudinaryDataLoader(DataLoader):
     @overrides
     def _get_all_image_paths(self) -> List[str]:
         """
-        Gets all image paths from the database if remote, or uses glob if local
+        Gets all the images public ids from the prefix provided
         """
         raw_results = cloudinary.api.resources(type = "upload", prefix = self._images_path, max_results=MAX_RESULTS)
         resources = raw_results['resources']
         if len(resources) == 0:
-            # self._logger.warning(f"No images found in {self._images_path}")
             return []
-        else:
-            # self._logger.info(f"Found {len(resources)} images in {self._images_path}")
-            pass
-        return [r['secure_url'] for r in resources]
+        return [r['public_id'] for r in resources]
 
     @overrides
     def _load_image(self, image_path):
