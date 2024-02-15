@@ -9,6 +9,7 @@ import cloudinary, cloudinary.api
 import requests
 from PIL import Image
 from io import BytesIO
+import os
 from os import environ
 import numpy as np
 import torch
@@ -23,8 +24,9 @@ class CloudinaryDataLoader(DataLoader):
     Note - The cloudinary connection depends on the credentials being set as environment variables in the format:
     CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
     """
-    def __init__(self, cloudinary_folder_prefix, database: Database, batch_size: int = 1):
-        super().__init__(images_path=cloudinary_folder_prefix, database=database, batch_size=batch_size, decode_images=True, load_images=True)
+    def __init__(self, cloudinary_folder_prefix, database: Database, batch_size: int = 1, is_recursive: bool = False):
+        super().__init__(images_path=cloudinary_folder_prefix, database=database, batch_size=batch_size, 
+                         decode_images=True, load_images=True, is_recursive=is_recursive)
         self._logger = get_logger("CloudinaryDataLoader")
         if not environ.get('CLOUDINARY_URL'):
             self._logger.error("Cloudinary credentials not found. Please set them as environment variables.")
@@ -65,7 +67,11 @@ class CloudinaryDataLoader(DataLoader):
         resources = raw_results['resources']
         if len(resources) == 0:
             return []
-        return [r['public_id'] for r in resources]
+        all_paths = [r['public_id'] for r in resources]
+        if not self.is_recursive:
+            return [path for path in all_paths if os.path.split(path)[0] == self._images_path]
+        else:
+            return all_paths
 
     @overrides
     def _load_image(self, image_path):

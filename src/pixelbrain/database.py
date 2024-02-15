@@ -11,6 +11,7 @@ import os
 import math
 from tqdm import tqdm
 from pinecone import Pinecone, Index
+import pandas as pd
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
 
@@ -51,7 +52,7 @@ class Database:
             # already have this image
             return
 
-        self._db.images.update_one({'_id': image_id}, {'$set': {"image_path": image_path}}, upsert=True)
+        _ = self._db.images.update_one({'_id': image_id}, {'$set': {"image_path": image_path}}, upsert=True)
 
     def store_field(self, image_id: str, field_name: str, field_value: str or np.ndarray):
         """
@@ -67,10 +68,10 @@ class Database:
         if isinstance(field_value, np.ndarray):
             if field_name.find("-") != -1:
                 raise ValueError("Field namd with vector values cannot have '-' in it")
-            self._store_vector(image_id, field_name, field_value)
+            _ = self._store_vector(image_id, field_name, field_value)
 
         else:
-            self._db.images.update_one({'_id': image_id}, {'$set': {field_name: field_value}}, upsert=True)
+            _ = self._db.images.update_one({'_id': image_id}, {'$set': {field_name: field_value}}, upsert=True)
 
     def _store_vector(self, image_id : str, field_name: str, embedding: np.ndarray):
         index_fqn = f"{self._db_id}-{field_name}"
@@ -79,12 +80,12 @@ class Database:
                 "id": image_id,
                 "values": embedding.tolist()
             }
-            self._vector_db.upsert(vectors=[vec], namespace=index_fqn)
-            self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:pinecone/{self._db_id}")
+            _ = self._vector_db.upsert(vectors=[vec], namespace=index_fqn)
+            _ = self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:pinecone/{self._db_id}")
         else:
             index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
-            index.upsert(image_id, embedding.tolist())
-            self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}")
+            _ = index.upsert(image_id, embedding.tolist())
+            _ = self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}")
 
     def query_vector_field(self, field_name: str, query: np.ndarray, n_results=1) -> Tuple[List[dict], List[float]]:
         """
@@ -140,10 +141,10 @@ class Database:
 
     def delete_db(self):
         """Delete database (use with caution)"""
-        self._db.client.drop_database(self._db_id)
+        _ = self._db.client.drop_database(self._db_id)
         if not isinstance(self._vector_db, Index):
             # TODO support remote vector store
-            shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
+            _ = shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
             
 
     def get_field(self, image_id: str, field_name: str):
@@ -208,7 +209,14 @@ class Database:
         :return: The aggregation result.
         """
         aggregation_pipeline = generate_aggregation_pipeline(field_name, sort_order)
-        return list(self._db.images.aggregate(aggregation_pipeline))
+        # This is a workaround for the fact that montydb does not support aggregation pipeline
+        # return list(self._db.images.aggregate(aggregation_pipeline))
+        df = pd.DataFrame(self.get_all_images())
+        df = df[df[field_name].notna()]
+        df_agg = df.groupby(field_name).agg(count=(field_name, 'size'), _id_list=('_id', lambda x: list(x)))
+        if sort_order != 0:
+            df_agg = df_agg.sort_values('count', ascending=(True if sort_order == 1 else False))
+        return df_agg.to_dict('records')
 
 
     def export_to_csv(self, file_path: str):
@@ -219,7 +227,7 @@ class Database:
         """
 
         df = pd.DataFrame(self.get_all_images())
-        df.to_csv(file_path, index=False)
+        _ = df.to_csv(file_path, index=False)
 
 
     @staticmethod
@@ -236,13 +244,13 @@ class Database:
         for _, row in tqdm(df.iterrows(), desc="Reading CSV file", total=len(df)):
             image_id = row['_id']
             image_path = row['image_path']
-            db.add_image(image_id, image_path)
+            _ = db.add_image(image_id, image_path)
             for field_name, field_value in row.items():
                 if field_name not in ['_id', 'image_path']:
                     if isinstance(field_value, float) and math.isnan(field_value):
                         # nan's are auto generated for empty values in numpy
                         continue
-                    db.store_field(image_id, field_name, field_value)
+                    _ = db.store_field(image_id, field_name, field_value)
         return db
 
     def filter(self, field_name: str, field_value=None):
@@ -254,12 +262,12 @@ class Database:
         :param field_value: The value of the field to filter. Default is None.
         """
         if field_value is None:
-            self._db.images.delete_many({field_name: {"$exists": False}})
+            _ = self._db.images.delete_many({field_name: {"$exists": False}})
         else:
-            self._db.images.delete_many({field_name: {"$ne": field_value}})
+            _ = self._db.images.delete_many({field_name: {"$ne": field_value}})
 
     def filter_unidentified_people(self, is_person_field: str = 'is_person', identity_field: str = 'assigned_identity'):
-        self._db.images.delete_many({is_person_field: {"$in": ["True", True]}, identity_field: {"$exists": False}})
+        _ = self._db.images.delete_many({is_person_field: {"$in": ["True", True]}, identity_field: {"$exists": False}})
 
     def clone_row(self, source_image_id: str, target_image_id: str):
         """
@@ -278,7 +286,7 @@ class Database:
 
         for field_name, field_value in source_image.items():
             if field_name not in ['_id', 'image_path']:
-                self.store_field(target_image_id, field_name, field_value)
+                _ = self.store_field(target_image_id, field_name, field_value)
 
     def does_image_have_field(self, image_id: str, field_name: str) -> bool:
         """
