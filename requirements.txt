@@ -34,3 +34,4 @@ matplotlib==3.8.1
 cloudinary==1.38.0
 pinecone-client==3.0.2
 montydb==2.5.2
+tensorflow==2.14.0
