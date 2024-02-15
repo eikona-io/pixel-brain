@@ -59,8 +59,9 @@ class EmbeddingDistanceScorerModule:
         tested_field (str): The name of the field containing the vectors to be tested.
         compare_to_field (str): The name of the field containing the vectors to compare against.
         scoring_strategy (ScoringStrategy): The strategy to use for scoring.
+        k_nearest: (int): k nearest vectors to consider if average_k_nearest strategy is used
     """
-    def __init__(self, database: Database, tested_field: str, compare_to_field: str, strategy: str, score_field_name='distance-score'):
+    def __init__(self, database: Database, tested_field: str, compare_to_field: str, strategy: str, score_field_name='distance-score', k_nearest: int = 5):
         self.database = database
         self.tested_field = tested_field
         self.compare_to_field = compare_to_field
@@ -69,7 +70,7 @@ class EmbeddingDistanceScorerModule:
         if strategy == "nearest":
             self.scoring_strategy = NearestScoringStrategy()
         elif strategy == "average_k_nearest":
-            self.scoring_strategy = AverageKNearestStrategy(k=5)  # Default value for k
+            self.scoring_strategy = AverageKNearestStrategy(k=k_nearest)
         elif strategy == "maximum_distance":
             self.scoring_strategy = MaximumDistanceStrategy()
         else:

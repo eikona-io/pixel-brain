@@ -16,6 +16,7 @@ class FaceSimilarityPipeline(TaggingPipeline):
         compare_to_dataloader (DataLoader): The data loader for the images to compare against.
         database (Database): The database instance for storing and retrieving embeddings.
         scoring_strategy (str): The strategy to use for scoring the distance between embeddings. Defaults to "nearest".
+        k_nearest (int): k nearest vectors to compare if k average_k_nearest strategy is used
     """
     def __init__(
         self,
@@ -24,7 +25,8 @@ class FaceSimilarityPipeline(TaggingPipeline):
         database: Database,
         scoring_strategy: str = "nearest",
         score_field_name: str = "face_similarity_score",
-        n_closest_compare_to_to_consider: int = 40
+        n_closest_compare_to_to_consider: int = 40,
+        k_nearest: int = 5
     ):
         """
         Initializes the FaceMatcherPipeline with the necessary data loaders, database, and scoring strategy.
@@ -54,7 +56,8 @@ class FaceSimilarityPipeline(TaggingPipeline):
             tested_field="face_embedding_tested",
             compare_to_field="face_embedding_compare_to",
             strategy=scoring_strategy,
-            score_field_name=score_field_name
+            score_field_name=score_field_name,
+            k_nearest=k_nearest
         )
         self._n_closest_compare_to_to_consider = n_closest_compare_to_to_consider
     

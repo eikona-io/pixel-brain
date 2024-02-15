@@ -15,6 +15,7 @@ class CloudinaryFaceSimilartyScorer:
         cloudinary_compare_to_prefix (str): The Cloudinary prefix for the images to compare against.
         database (Database): An optional database instance for storing results. If not provided, a new one is created.
         scoring_strategy (str): The strategy to use for scoring the distance between embeddings. Defaults to "nearest".
+        k_nearest (int): k nearest vectors to compare if k average_k_nearest strategy is used
     """
 
     def __init__(
@@ -24,7 +25,8 @@ class CloudinaryFaceSimilartyScorer:
         database: Database = None,
         scoring_strategy: str = "nearest",
         score_field_name: str = "face_similarity_score",
-        n_closest_compare_to_to_consider: int = 40
+        n_closest_compare_to_to_consider: int = 40,
+        k_nearest: int = 5
     ):
         self._database_created = False
         if not database:
@@ -44,7 +46,8 @@ class CloudinaryFaceSimilartyScorer:
             database,
             scoring_strategy=scoring_strategy,
             score_field_name=score_field_name,
-            n_closest_compare_to_to_consider=n_closest_compare_to_to_consider
+            n_closest_compare_to_to_consider=n_closest_compare_to_to_consider,
+            k_nearest=k_nearest
         )
         self._scoring_field_name = score_field_name
         self._logger = get_logger("CloudinaryFaceSimilartyScorer")
