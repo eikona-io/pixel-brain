@@ -1,5 +1,6 @@
 from pixelbrain.mongo_pipelines import generate_aggregation_pipeline
 from pymongo import MongoClient, ASCENDING, DESCENDING
+from montydb import MontyClient
 import chromadb
 from chromadb.config import Settings
 import numpy as np
@@ -28,7 +29,9 @@ class Database:
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
         else:
-            self._db = MongoClient()[database_id]
+            # runs an bson(binary-json) mongo compatible client
+            # TODO: omerh -> change to in-memory storage, but currently there is a bug in pytest when doing so
+            self._db = MontyClient(":bson:")[database_id]
         if pinecone_vector_key:
             # TODO: omerh -> change to creating a new index once we move out of free version
             self._vector_db = Pinecone(pinecone_vector_key).Index(database_id)

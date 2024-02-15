@@ -243,5 +243,3 @@ def test_clone_row_method_local():
 
 def test_clone_row_method_remote():
     clone_row_method_run(MONGODB_ATLAS_KEY)
-
-test_get_field_remote()
