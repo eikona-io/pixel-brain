@@ -2,7 +2,7 @@ from pixelbrain.pipelines.face_similarity_pipeline import FaceSimilarityPipeline
 from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 from pixelbrain.database import Database
 from typing import List
-
+from pixelbrain.utils import get_logger
 class CloudinaryFaceSimilartyScorer:
     """
     A class to match faces using images stored in Cloudinary.
@@ -47,6 +47,7 @@ class CloudinaryFaceSimilartyScorer:
             n_closest_compare_to_to_consider=n_closest_compare_to_to_consider
         )
         self._scoring_field_name = score_field_name
+        self._logger = get_logger("CloudinaryFaceSimilartyScorer")
 
     def process(self) -> List[str]:
         """Processes the images to match faces using the configured pipeline."""
@@ -57,8 +58,8 @@ class CloudinaryFaceSimilartyScorer:
             sort_by=self._scoring_field_name,
             ascending=True,
         )
-        print(results_meta)
-        print(self._database.get_all_images())
+        self._logger.info(results_meta)
+        self._logger.info(self._database.get_all_images())
         # if self._database_created:
         #     self._database.delete_db()
         
