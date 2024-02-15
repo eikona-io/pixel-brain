@@ -29,23 +29,17 @@ class FacenetEmbbedderModule(PipelineModule):
         :param processed_image_batch: Batch of preprocessed images
         """
         for image_id, image in zip(image_ids, processed_image_batch):
-            print(image_id)
             try:
-                print("before")
                 face_embedding = DeepFace.represent(image.numpy(), 
                                                     model_name="Facenet512", 
                                                     detector_backend="retinaface",
                                                     enforce_detection=True)
-                print("after")
-                print(face_embedding)
                 if len(face_embedding) != 1:
                     # more then one face
                     # we don't want this image
                     break
-                print(self._embedding_field_name)
                 self._database.store_field(image_id, self._embedding_field_name, np.array(face_embedding[0]['embedding']))
             except Exception as err:
                 # no face detetectad raises an error
-                print("no face detected")
                 pass
 

@@ -64,7 +64,3 @@ class CloudinaryFaceSimilartyScorer:
             self._database.delete_db()
         
         return [result['cloudinary_public_id'] for result in results_meta]
-
-# i = CloudinaryFaceSimilartyScorer("user_images/generated_images/demo/1707663552586", "user_photos/1707663552586").process()
-# print(i)
-
