@@ -23,8 +23,8 @@ class CloudinaryDataLoader(DataLoader):
     Note - The cloudinary connection depends on the credentials being set as environment variables in the format:
     CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
     """
-    def __init__(self, cloudinary_folder_prefix, database: Database):
-        super().__init__(images_path=cloudinary_folder_prefix, database=database, batch_size=1, decode_images=True, load_images=True)
+    def __init__(self, cloudinary_folder_prefix, database: Database, batch_size: int = 1):
+        super().__init__(images_path=cloudinary_folder_prefix, database=database, batch_size=batch_size, decode_images=True, load_images=True)
         self._logger = get_logger("CloudinaryDataLoader")
         if not environ.get('CLOUDINARY_URL'):
             self._logger.error("Cloudinary credentials not found. Please set them as environment variables.")

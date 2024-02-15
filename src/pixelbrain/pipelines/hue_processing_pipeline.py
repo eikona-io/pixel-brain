@@ -1,12 +1,10 @@
-from typing import List
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.pipeline import TaggingPipeline
-from pixelbrain.modules.face_extractor import FaceExtractorModule
-from pixelbrain.apps.cloudinary_dataloader import CloudinaryDataLoader
 from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
 from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
+from pixelbrain.apps.detect_gender.cloudinary_detect_gender_app import CloudinaryGenderDetector
 from pixelbrain.utils import create_timestamp
 from os.path import join
 from os import makedirs
@@ -26,12 +24,12 @@ class HueProcessingPipeline(TaggingPipeline):
         current_run_results_dir = join(local_results_dir, create_timestamp())
         makedirs(current_run_results_dir, exist_ok=True)
         identity_db = Database(database_id=uuid4().hex)
-        # identity_db.export_to_csv('/home/ubuntu/pixel-brain/csvs/test_identity.csv')
 
         self._data_processors = [
             GroundedSAMDetectorModule(dataloader, dataloader._database, 'person', 'foobar', results_dir=current_run_results_dir,
                                       maximal_medium_ratio=maximal_medium_ratio, maximal_wide_ratio=maximal_wide_ratio,
                                       include_background=include_background),
             IdentityTaggingPipeline(current_run_results_dir, identity_db, apply_people_detector=False),
-            UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity')
+            UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity'),
+            CloudinaryGenderDetector(user_id, num_images=32)
         ]
