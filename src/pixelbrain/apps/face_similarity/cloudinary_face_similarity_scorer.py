@@ -49,7 +49,7 @@ class CloudinaryFaceSimilartyScorer:
         self._scoring_field_name = score_field_name
         self._logger = get_logger("CloudinaryFaceSimilartyScorer")
 
-    def process(self) -> List[str]:
+    def processs(self) -> List[str]:
         """Processes the images to match faces using the configured pipeline."""
         self._matcher.process()
         results_meta = self._database.find_images_with_value(
