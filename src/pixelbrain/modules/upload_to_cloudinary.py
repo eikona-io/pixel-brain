@@ -1,11 +1,9 @@
 from pixelbrain.pipeline import DataProcessor
-from pixelbrain.data_loader import DataLoader
 import cloudinary.uploader
-from typing import Optional, List, Dict
+from typing import Optional
 from pixelbrain.database import Database
 from overrides import overrides
 import os
-import torch
 
 
 class UploadToCloudinaryModule(DataProcessor):
@@ -49,7 +47,7 @@ class UploadToCloudinaryModule(DataProcessor):
 
         uploaded_image_ids = []
         for image_path in upload_image_paths:
-            remote_image_path = f"user_photos/{self._user_id}/processed/{os.path.basename(image_path)}"
+            remote_image_path = f"user_photos/{self._user_id}/processed/{os.path.splitext(os.path.basename(image_path))[0]}"
             cloudinary.uploader.upload(image_path,
                                         public_id=remote_image_path,
                                         unique_filename = False, 

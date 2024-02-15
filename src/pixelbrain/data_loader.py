@@ -25,7 +25,8 @@ class DataLoader:
     DataLoader class that loads and decodes images either from disk or S3
     """
     def __init__(self, images_path: str, database: Database, batch_size=1, 
-                 decode_images=True, load_images=True, reload_images_if_first_iteration: bool = True):
+                 decode_images=True, load_images=True, reload_images_if_first_iteration: bool = True,
+                 is_recursive: bool = True):
         """
         Initializes the DataLoader with images path, database and batch size
 
@@ -39,6 +40,7 @@ class DataLoader:
         self._images_path = images_path
         self._database = database
         self._batch_size = batch_size
+        self.is_recursive = is_recursive
         self._image_paths = self._get_all_image_paths()
         self._tempdir = TemporaryDirectory()
         self._decode_images = decode_images
@@ -114,7 +116,7 @@ class DataLoader:
             return [obj.key for obj in s3.list_objects(Bucket=bucket_name)['Contents']]
         else:
             # Use glob to find image paths locally
-            return glob.glob(os.path.join(self._images_path, '**/*.*'), recursive=True)
+            return glob.glob(os.path.join(self._images_path, '**/*.*'), recursive=self.is_recursive)
 
     def clone(self):
         """
