@@ -1,18 +1,22 @@
+from pixelbrain.data_loader import DataLoader
 from pixelbrain.pipelines.face_similarity_pipeline import FaceSimilarityPipeline
 from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 from pixelbrain.database import Database
 from typing import List
 from pixelbrain.utils import get_logger
-class CloudinaryFaceSimilartyScorer:
-    """
-    A class to match faces using images stored in Cloudinary.
 
-    This class initializes the necessary components to match faces from two different Cloudinary prefixes,
+
+class FaceSimilartyScorer:
+    """
+    A class to match faces using images stored in Cloudinary or local directories.
+
+    This class initializes the necessary components to match faces from two different sources,
     using a specified scoring strategy to evaluate the similarity between faces.
 
     Attributes:
-        cloudinary_tested_prefix (str): The Cloudinary prefix for the images to be tested.
-        cloudinary_compare_to_prefix (str): The Cloudinary prefix for the images to compare against.
+        source_dir (str): The directory for the images to be tested.
+        compare_to_dir (str): The directory for the images to compare against.
+        source_type (str): The type of source, either 'cloudinary' or 'local'.
         database (Database): An optional database instance for storing results. If not provided, a new one is created.
         scoring_strategy (str): The strategy to use for scoring the distance between embeddings. Defaults to "nearest".
         k_nearest (int): k nearest vectors to compare if k average_k_nearest strategy is used
@@ -20,8 +24,9 @@ class CloudinaryFaceSimilartyScorer:
 
     def __init__(
         self,
-        cloudinary_tested_prefix: str,
-        cloudinary_compare_to_prefix: str,
+        source_dir: str,
+        compare_to_dir: str,
+        source_type: str = 'cloudinary',
         database: Database = None,
         scoring_strategy: str = "nearest",
         score_field_name: str = "face_similarity_score",
@@ -33,16 +38,28 @@ class CloudinaryFaceSimilartyScorer:
             database = Database("cloudinary-face-similarty-scorer")
             self._database_created = True
 
-        self._cloudinary_tested_dataloader = CloudinaryDataLoader(
-            cloudinary_tested_prefix, database
-        )
-        self._cloudinary_compare_to_dataloader = CloudinaryDataLoader(
-            cloudinary_compare_to_prefix, database
-        )
+        if source_type == 'cloudinary':
+            self._tested_dataloader = CloudinaryDataLoader(
+                source_dir, database
+            )
+            self._compare_to_dataloader = CloudinaryDataLoader(
+                compare_to_dir, database
+            )
+        elif source_type == 'local':
+            self._tested_dataloader = DataLoader(
+                source_dir, database, load_images=True
+            )
+            self._compare_to_dataloader = DataLoader(
+                compare_to_dir, database, load_images=True
+            )
+        else:
+            raise ValueError("source_type must be either 'cloudinary' or 'local'")
+        self._source_type = source_type
+
         self._database = database
         self._matcher = FaceSimilarityPipeline(
-            self._cloudinary_tested_dataloader,
-            self._cloudinary_compare_to_dataloader,
+            self._tested_dataloader,
+            self._compare_to_dataloader,
             database,
             scoring_strategy=scoring_strategy,
             score_field_name=score_field_name,
@@ -64,4 +81,5 @@ class CloudinaryFaceSimilartyScorer:
         if self._database_created:
             self._database.delete_db()
         
-        return [result['cloudinary_public_id'] for result in results_meta]
+        result_field_to_retrieve = 'cloudinary_public_id' if self._source_type == 'cloudinary' else 'image_path'
+        return [result[result_field_to_retrieve] for result in results_meta]

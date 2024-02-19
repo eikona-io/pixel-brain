@@ -115,8 +115,12 @@ class DataLoader:
             bucket_name = self._images_path.replace('s3://', '').split('/')[0]
             return [obj.key for obj in s3.list_objects(Bucket=bucket_name)['Contents']]
         else:
-            # Use glob to find image paths locally
-            return glob.glob(os.path.join(self._images_path, '**/*.*'), recursive=self.is_recursive)
+            # Use glob to find image paths locally, only including common image file extensions
+            image_extensions = ['jpg', 'jpeg', 'png', 'PNG', 'JPEG', 'JPG']
+            image_paths = []
+            for ext in image_extensions:
+                image_paths.extend(glob.glob(os.path.join(self._images_path, f'**/*.{ext}'), recursive=self.is_recursive))
+            return image_paths
 
     def clone(self):
         """
