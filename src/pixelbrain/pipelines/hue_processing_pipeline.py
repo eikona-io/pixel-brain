@@ -18,7 +18,8 @@ class HueProcessingPipeline(TaggingPipeline):
                  user_id: str,
                  maximal_medium_ratio: float = 1,
                  maximal_wide_ratio: float = 1,
-                 include_background: bool = False):
+                 include_background: bool = False,
+                 path_to_sam_checkpoint: str = None):
         super().__init__(local_results_dir, None)
         
         current_run_results_dir = join(local_results_dir, create_timestamp())
@@ -28,7 +29,7 @@ class HueProcessingPipeline(TaggingPipeline):
         self._data_processors = [
             GroundedSAMDetectorModule(dataloader, dataloader._database, 'person', 'foobar', results_dir=current_run_results_dir,
                                       maximal_medium_ratio=maximal_medium_ratio, maximal_wide_ratio=maximal_wide_ratio,
-                                      include_background=include_background),
+                                      include_background=include_background, path_to_checkpoint=path_to_sam_checkpoint),
             IdentityTaggingPipeline(current_run_results_dir, identity_db, apply_people_detector=False),
             UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity'),
             CloudinaryGenderDetector(user_id, num_images=32)

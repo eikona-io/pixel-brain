@@ -2,7 +2,7 @@ from pixelbrain.pipeline import PipelineModule
 import torchvision.transforms as transforms
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
-from typing import List, Dict, Union
+from typing import List, Dict, Optional
 from pixelbrain.pre_processors.grounded_sam import GroundedSAMPreprocessor
 from PIL import Image
 from lang_sam import LangSAM
@@ -48,7 +48,8 @@ class GroundedSAMDetectorModule(PipelineModule):
                  results_dir: str = '/tmp',
                  maximal_medium_ratio: float = 1,
                  maximal_wide_ratio: float = 1,
-                 include_background: bool = False):
+                 include_background: bool = False,
+                 path_to_checkpoint: Optional[str] = None):
         """
         Initialize the GroundedSAMDetectorModule.
         
@@ -61,16 +62,18 @@ class GroundedSAMDetectorModule(PipelineModule):
         :param maximal_medium_ratio: The maximal ratio of medium shots to closeups
         :param maximal_wide_ratio: The maximal ratio of wide shots to closeups
         :param include_background: Whether to include the background in the results
+        :param path_to_checkpoint: The path to the checkpoint of the grounded sam model. If None, downloads uses the default model from HF.
         """
         super().__init__(data, database, GroundedSAMPreprocessor(), filters)
         self._detection_string = detection_string
         self._metadata_field_name = metadata_field_name
-        self._grounded_sam = LangSAM()
+        self._grounded_sam = LangSAM(ckpt_path=path_to_checkpoint)
         self.sam_results = []
         self._results_dir = results_dir
         self.maximal_medium_ratio = maximal_medium_ratio
         self.maximal_wide_ratio = maximal_wide_ratio
         self.include_background = include_background
+        self.path_to_checkpoint = path_to_checkpoint
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
