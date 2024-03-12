@@ -4,7 +4,6 @@ from pixelbrain.pipeline import TaggingPipeline
 from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
 from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
-from pixelbrain.apps.detect_gender.cloudinary_detect_gender_app import CloudinaryGenderDetector
 from pixelbrain.utils import create_timestamp
 from os.path import join
 from os import makedirs
@@ -32,5 +31,4 @@ class HueProcessingPipeline(TaggingPipeline):
                                       include_background=include_background, path_to_checkpoint=path_to_sam_checkpoint),
             IdentityTaggingPipeline(current_run_results_dir, identity_db, apply_people_detector=False),
             UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity'),
-            CloudinaryGenderDetector(user_id, num_images=32)
         ]
