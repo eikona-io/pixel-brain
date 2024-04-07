@@ -34,9 +34,9 @@ def calculate_distance(image_path1, image_path2, db: Database):
     return distance
 
 def calculate_self_distances(subject, db: Database):
-    subject_1_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_1.jpeg"
-    subject_2_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_2.jpeg"
-    subject_3_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_3.jpeg"
+    subject_1_path = f"{PIXELBRAIN_PATH}/assets/test_data/subjects/{subject}_1.jpeg"
+    subject_2_path = f"{PIXELBRAIN_PATH}/assets/test_data/subjects/{subject}_2.jpeg"
+    subject_3_path = f"{PIXELBRAIN_PATH}/assets/test_data/subjects/{subject}_3.jpeg"
     one_two_dist = calculate_distance(subject_1_path, subject_2_path, db)
     one_three_dist = calculate_distance(subject_1_path, subject_3_path, db)
     two_three_dist = calculate_distance(subject_2_path, subject_3_path, db)
@@ -44,7 +44,7 @@ def calculate_self_distances(subject, db: Database):
 
 
 def calculate_closest_other_distance(subject, db: Database):
-    subject_1_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_1.jpeg"
+    subject_1_path = f"{PIXELBRAIN_PATH}/assets/test_data/subjects/{subject}_1.jpeg"
     vec = db.get_field(subject_1_path, "face_embedding")
     metadatas, dists = db.query_vector_field("face_embedding", vec, n_results=5)
     for metadata, distance in zip(metadatas, dists):
