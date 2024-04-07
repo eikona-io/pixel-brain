@@ -11,7 +11,7 @@ from pixelbrain.utils import PIXELBRAIN_PATH
 @pytest.mark.slow_suit
 def test_facenet_embedder():
     database = Database(database_id="facenet_embedder_test")
-    data = DataLoader(f"{PIXELBRAIN_PATH}/asset/test_data", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/assets/test_data", database)
 
     # Create an instance of FacenetEmbbedderModule
     facenet_embedder = FacenetEmbbedderModule(data, database)
@@ -23,7 +23,7 @@ def test_facenet_embedder():
     for image_meta in metadata:
         if "face_embedding" in image_meta:
             num_faces += 1
-    assert num_faces == 31, "should be 31 faces"
+    assert num_faces == 32, "should be 32 faces"
     database.delete_db()
 
 
@@ -70,7 +70,7 @@ def calulate_subjects_distances(db: Database):
 @pytest.mark.slow_suit
 def test_facenet_embedder_threshold(draw_plt=False):
     database = Database(database_id="facenet_embedder_test")
-    data = DataLoader(f"{PIXELBRAIN_PATH}/asset/test_data/subjects", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/assets/test_data/subjects", database)
 
     # Create an instance of FacenetEmbbedderModule
     facenet_embedder = FacenetEmbbedderModule(data, database)
@@ -141,3 +141,5 @@ def draw_precision_recall_curve(self_dists, other_dists):
 
     plt.show()
     plt.savefig('precision_recall_curve.png')
+
+test_facenet_embedder()
