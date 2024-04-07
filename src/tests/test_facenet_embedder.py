@@ -141,5 +141,3 @@ def draw_precision_recall_curve(self_dists, other_dists):
 
     plt.show()
     plt.savefig('precision_recall_curve.png')
-
-test_facenet_embedder()

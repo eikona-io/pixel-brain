@@ -38,7 +38,7 @@ def people_identifier_module_run(strategy):
             assert len(set(orig_identities)) == 1, "Not all original identities are the same"
             if strategy == "hdbscan":
                 # hdbscan should find all subject photos
-                assert len(set(orig_identities)) == 3, "Not all subject photos were found"
+                assert len(same_identity_images) == 3, "Not all subject photos were found"
     database.delete_db()
 
 @pytest.mark.slow_suit
@@ -49,3 +49,5 @@ def test_people_identifier_module_pairwise_strategy():
 @pytest.mark.slow_suit
 def test_people_identifier_module_hdbscan_strategy():
     people_identifier_module_run('hdbscan')
+
+test_people_identifier_module_hdbscan_strategy()

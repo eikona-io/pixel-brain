@@ -130,4 +130,4 @@ cython_debug/
 .vscode/
 
 chroma/
-:bson:
+:bson:/
