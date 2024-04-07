@@ -88,10 +88,7 @@ class CloudinaryDataLoader(DataLoader):
     def test_cloudinary_connection(self):
         try:
             cloudinary.api.ping()
-            # self._logger.info("Cloudinary connection successful.")
         except AuthorizationRequired as e:
-            # self._logger.error("Cloudinary connection failed. Please check your credentials.")
             raise e
         except Exception as e:
-            # self._logger.error("Cloudinary connection failed. Please check your internet connection.")
             raise e

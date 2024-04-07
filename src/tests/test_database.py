@@ -4,6 +4,9 @@ import numpy as np
 from pixelbrain.utils import MONGODB_ATLAS_KEY, PINECONE_KEY
 import tempfile
 import time
+import pytest
+from uuid import uuid4
+
 
 def store_field_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id='store_field_test')
@@ -56,6 +59,7 @@ def test_find_image_error_local():
 def test_find_image_error_remote():
     find_image_error_run(MONGODB_ATLAS_KEY)
 
+
 def vector_db_multiple_vectors_run(mongo_key=None, pinecone_key=None):
     db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
     for i in range(10):
@@ -74,15 +78,18 @@ def vector_db_multiple_vectors_run(mongo_key=None, pinecone_key=None):
 def test_local_vector_db_multiple_vectors_run():
     vector_db_multiple_vectors_run()
 
+@pytest.mark.slow_suit
 def test_remote_vector_db_multiple_vectors_run():
     vector_db_multiple_vectors_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
 def vector_db_single_vector_run(mongo_key=None, pinecone_key=None):
-    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
-    db.add_image('test_id', 'test_image_path')
+    db_id = 'hue' if pinecone_key else str(uuid4())
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id=db_id)
+    test_id = str(uuid4())
+    db.add_image(test_id, 'test_image_path')
     rand_vec = np.random.uniform(0, 1, 512)
     rand_vec2 = np.random.uniform(0, 1, 512)
-    db.store_field('test_id', 'test_field', rand_vec)
+    db.store_field(test_id, 'test_field', rand_vec)
     if pinecone_key:
         time.sleep(15) # sync pinecone
     metas, dists = db.query_vector_field('test_field', rand_vec2)
@@ -95,16 +102,21 @@ def vector_db_single_vector_run(mongo_key=None, pinecone_key=None):
 def test_local_vector_db_single_vectors_run():
     vector_db_single_vector_run()
 
+@pytest.mark.slow_suit
 def test_remote_vector_db_single_vectors_run():
     vector_db_single_vector_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
 def get_field_run(mongo_key=None, pinecone_key=None):
-    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
-    db.add_image('test_id', 'test_image_path')
-    db.store_field('test_id', 'test_field', np.random.uniform(0, 1, 512))
-    db.store_field('test_id', 'test_field2', "test value")
-    val1 = db.get_field('test_id', 'test_field')
-    val2 = db.get_field('test_id', 'test_field2')
+    db_id = 'hue' if pinecone_key else str(uuid4())
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id=db_id)
+    test_id = str(uuid4())
+    db.add_image(test_id, 'test_image_path')
+    db.store_field(test_id, 'test_field', np.random.uniform(0, 1, 512))
+    if pinecone_key:
+        time.sleep(20) # sync pinecone
+    db.store_field(test_id, 'test_field2', "test value")
+    val1 = db.get_field(test_id, 'test_field')
+    val2 = db.get_field(test_id, 'test_field2')
     db.delete_db()
     assert isinstance(val1, np.ndarray)
     assert isinstance(val2, str)
@@ -114,6 +126,7 @@ def get_field_run(mongo_key=None, pinecone_key=None):
 def test_get_field_local():
     get_field_run()
 
+@pytest.mark.slow_suit
 def test_get_field_remote():
     get_field_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 

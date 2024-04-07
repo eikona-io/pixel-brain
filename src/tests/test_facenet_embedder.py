@@ -5,12 +5,13 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 import pytest
+from pixelbrain.utils import PIXELBRAIN_PATH
 
 
 @pytest.mark.slow_suit
 def test_facenet_embedder():
     database = Database(database_id="facenet_embedder_test")
-    data = DataLoader("assets/test_data", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/asset/test_data", database)
 
     # Create an instance of FacenetEmbbedderModule
     facenet_embedder = FacenetEmbbedderModule(data, database)
@@ -33,9 +34,9 @@ def calculate_distance(image_path1, image_path2, db: Database):
     return distance
 
 def calculate_self_distances(subject, db: Database):
-    subject_1_path = f"assets/test_data/subjects/{subject}_1.jpeg"
-    subject_2_path = f"assets/test_data/subjects/{subject}_2.jpeg"
-    subject_3_path = f"assets/test_data/subjects/{subject}_3.jpeg"
+    subject_1_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_1.jpeg"
+    subject_2_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_2.jpeg"
+    subject_3_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_3.jpeg"
     one_two_dist = calculate_distance(subject_1_path, subject_2_path, db)
     one_three_dist = calculate_distance(subject_1_path, subject_3_path, db)
     two_three_dist = calculate_distance(subject_2_path, subject_3_path, db)
@@ -43,7 +44,7 @@ def calculate_self_distances(subject, db: Database):
 
 
 def calculate_closest_other_distance(subject, db: Database):
-    subject_1_path = f"assets/test_data/subjects/{subject}_1.jpeg"
+    subject_1_path = f"{PIXELBRAIN_PATH}/asset/test_data/subjects/{subject}_1.jpeg"
     vec = db.get_field(subject_1_path, "face_embedding")
     metadatas, dists = db.query_vector_field("face_embedding", vec, n_results=5)
     for metadata, distance in zip(metadatas, dists):
@@ -69,7 +70,7 @@ def calulate_subjects_distances(db: Database):
 @pytest.mark.slow_suit
 def test_facenet_embedder_threshold(draw_plt=False):
     database = Database(database_id="facenet_embedder_test")
-    data = DataLoader("assets/test_data/subjects", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/asset/test_data/subjects", database)
 
     # Create an instance of FacenetEmbbedderModule
     facenet_embedder = FacenetEmbbedderModule(data, database)

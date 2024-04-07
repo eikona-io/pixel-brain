@@ -17,7 +17,7 @@ cloudinary==1.38.0
 coloredlogs==15.0.1
 contourpy==1.1.1
 cycler==0.12.1
-deepface==0.0.79
+deepface==0.0.89
 Deprecated==1.2.14
 dnspython==2.4.2
 exceptiongroup==1.1.3

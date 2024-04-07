@@ -19,6 +19,7 @@ MOCK_API_KEY = "test_key"
 MOCK_API_SECRET = "test_secret"
 MOCK_IMAGE_ID = "123"
 MOCK_PREFIX = "user_photos/mock_user_name"
+MOCK_PUBLIC_ID = f"{MOCK_PREFIX}/{MOCK_IMAGE_ID}"
 MOCK_IMAGE_URL = f"https://res.cloudinary.com/{MOCK_CLOUD_NAME}/image/upload/v1706189351/{MOCK_PREFIX}/{MOCK_IMAGE_ID}.jpg"
 
 
@@ -41,9 +42,14 @@ class MockCloudinary:
             return Response({'status': 'ok'}, MockResponse())
         def resources(type='upload', prefix='', max_results=500):
             if prefix == MOCK_PREFIX:
-                return {'resources': [{'secure_url': MOCK_IMAGE_URL}]}
+                return {'resources': [{'secure_url': MOCK_IMAGE_URL, 'public_id': MOCK_PUBLIC_ID}]}
             else:
                 return {'resources': []}
+        
+    class utils:
+        @staticmethod
+        def cloudinary_url(public_id, **combined_options):
+            return [MOCK_IMAGE_URL]
 
 
 class MockRequests:
@@ -58,6 +64,7 @@ class MockRequests:
 
 
 cloudinary.api = MockCloudinary.api
+cloudinary.utils = MockCloudinary.utils
 requests.get = MockRequests.get
 
 
@@ -98,7 +105,7 @@ class TestCloudinaryDataLoader:
     def test_get_all_image_paths(self):
         good_loader = self.get_loader()
         image_urls = good_loader._get_all_image_paths()
-        assert image_urls == [MOCK_IMAGE_URL]
+        assert image_urls == [MOCK_PUBLIC_ID]
         bad_loader = CloudinaryDataLoader(self.wrong_cloudinary_folder_prefix, self.database)
         image_urls = bad_loader._get_all_image_paths()
         assert image_urls == []

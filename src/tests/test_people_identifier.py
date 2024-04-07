@@ -4,7 +4,7 @@ from pixelbrain.modules.embedders import FacenetEmbbedderModule
 from pixelbrain.modules.people_identifier import PeopleIdentifierModule
 import re
 import pytest
-
+from pixelbrain.utils import PIXELBRAIN_PATH
 
 def get_identity_from_path(path):
     match = re.search(r'/(\d+)_\d+.jpeg', path)
@@ -14,7 +14,7 @@ def get_identity_from_path(path):
 
 def people_identifier_module_run(strategy):
     database = Database(database_id=f"people_identifier_test_{strategy}")
-    data = DataLoader("assets/test_data/subjects", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/assets/test_data/subjects", database)
     data2 = data.clone()
 
     # Create an instance of FacenetEmbbedderModule and process the data
@@ -41,6 +41,7 @@ def people_identifier_module_run(strategy):
                 assert len(set(orig_identities)) == 3, "Not all subject photos were found"
     database.delete_db()
 
+@pytest.mark.slow_suit
 def test_people_identifier_module_pairwise_strategy():
     people_identifier_module_run('pairwise')
 

@@ -2,10 +2,12 @@ import glob
 from pixelbrain.pre_processors.resnet_preprocessor import ResnetPreprocessor
 from pixelbrain.pre_processors.hog_detector import HogsDetectorPreprocessor
 from torchvision.io import read_image
+from pixelbrain.utils import PIXELBRAIN_PATH
+
 
 def test_resnet_preprocessor():
     preprocessor = ResnetPreprocessor()
-    test_images = [read_image(img) for img in glob.glob('assets/test_data/**.*')]
+    test_images = [read_image(img) for img in glob.glob(f'{PIXELBRAIN_PATH}/assets/test_data/**.*')]
     processed_imgs = preprocessor(test_images)
     for img in processed_imgs:
         assert img.shape == (3, 256, 256)

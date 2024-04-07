@@ -1,14 +1,13 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
-from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
 import pytest
-
+from pixelbrain.utils import PIXELBRAIN_PATH
 
 @pytest.mark.slow_suit
 def test_grounded_sam_detector():
+    from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
     database = Database(database_id="grounded_sam")
-    # test only one image to save cost
-    data = DataLoader("assets/test_data/", database)
+    data = DataLoader(f"{PIXELBRAIN_PATH}/assets/test_data/", database)
     module = GroundedSAMDetectorModule(data, database, "human", "is_person")
     module.process()
     

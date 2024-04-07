@@ -3,11 +3,11 @@ from pixelbrain.database import Database
 import pytest
 import tempfile
 from pixelbrain.apps.fashion_tagging_pipeline.fashion_tagging_pipeline import FashionTaggingPipeline
-
+from pixelbrain.utils import PIXELBRAIN_PATH
 
 def identity_tagging_pipeline_run(identifying_strategy, apply_people_detector=True):
     database = Database(database_id="fashion_tagging_pipe_subset")
-    pipe = IdentityTaggingPipeline('assets/test_data', 
+    pipe = IdentityTaggingPipeline(f'{PIXELBRAIN_PATH}/assets/test_data', 
                                    database,
                                    identity_field_name=f'{identifying_strategy}_identity',
                                    apply_people_detector=apply_people_detector,

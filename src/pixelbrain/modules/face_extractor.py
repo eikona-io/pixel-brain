@@ -98,7 +98,7 @@ class FaceExtractorModule(PipelineModule):
         :param detected_face: Detected face as a dictionary
         :return: Extracted face as a numpy array
         """
-        x, y, w, h = detected_face.values()
+        x, y, w, h, _, _ = detected_face.values()
         face_center_x = x + w / 2
         face_center_y = y + h / 2
         image_h, image_w, _ = image.shape

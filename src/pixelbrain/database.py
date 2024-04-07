@@ -168,7 +168,10 @@ class Database:
                 result = self._vector_db.fetch(ids=[image_id], namespace=index_fqn)
                 if result:
                     result_id = list(result['vectors'].keys())
-                    assert len(result_id) == 1, f"found more then 1 vector with id {image_id}"
+                    if len(result_id) > 1:
+                        raise ValueError(f"Found more than 1 vector with id {image_id}")
+                    elif len(result_id) == 0:
+                        raise ValueError(f"No vector found with id {image_id}")
                     field_value = result['vectors'][result_id[0]]['values']
                 else:
                     raise ValueError(f"Vector for {image_id} not found in {index_fqn}")
