@@ -29,10 +29,12 @@ class Database:
         """
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
+            self._local_montydb_path = None
         else:
             # runs an bson(binary-json) mongo compatible client
             # TODO: omerh -> change to in-memory storage, but currently there is a bug in pytest when doing so
-            self._db = MontyClient(":bson:")[database_id]
+            self._local_montydb_path = f"{os.getcwd()}/monty/{database_id}"
+            self._db = MontyClient(f"montydb:///{self._local_montydb_path}")[database_id]
         if pinecone_vector_key:
             # TODO: omerh -> change to creating a new index once we move out of free version
             self._vector_db = Pinecone(pinecone_vector_key).Index(database_id)
@@ -145,6 +147,8 @@ class Database:
         if not isinstance(self._vector_db, Index):
             # TODO support remote vector store
             _ = shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
+        if self._local_montydb_path:
+            _ = shutil.rmtree(self._local_montydb_path, ignore_errors=True)
             
 
     def get_field(self, image_id: str, field_name: str):
