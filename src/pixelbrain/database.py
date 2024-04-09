@@ -15,6 +15,7 @@ import pandas as pd
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
 
+
 class Database:
     """
     This class is used to interact with the MongoDB database.
