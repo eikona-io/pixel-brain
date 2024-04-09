@@ -62,7 +62,8 @@ def test_find_image_error_remote():
 
 
 def vector_db_multiple_vectors_run(mongo_key=None, pinecone_key=None):
-    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id='hue')
+    db_id = 'hue' if pinecone_key else str(uuid4())
+    db = Database(mongo_key=mongo_key, pinecone_vector_key=pinecone_key, database_id=db_id)
     with DeleteDatabaseAfterTest(db):
         for i in range(10):
             db.add_image(f'test_id_{i}', 'test_image_path')
