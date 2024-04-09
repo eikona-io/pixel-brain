@@ -63,14 +63,11 @@ class MockRequests:
             return requests.Response()
 
 
-cloudinary.api = MockCloudinary.api
-cloudinary.utils = MockCloudinary.utils
-requests.get = MockRequests.get
-
 
 class TestCloudinaryDataLoader:
     @pytest.fixture(autouse=True)
-    def setup(self):
+    def setup_and_teardown(self):
+        # Setup code
         self.database = MagicMock()
         self.cloudinary_folder_prefix = MOCK_PREFIX
         self.wrong_cloudinary_folder_prefix = "mock_wrong_prefix"
@@ -79,7 +76,21 @@ class TestCloudinaryDataLoader:
         self.cloudinary_api_secret = MOCK_API_SECRET
         self.wrong_cloudinary_api_secret = "mock_wrong_secret"
         self.test_image = decode_image(read_file(TEST_IMAGE_PATH), ImageReadMode.UNCHANGED)
+        self.original_cloudinary_url = os.environ.get('CLOUDINARY_URL')
         os.environ['CLOUDINARY_URL'] = f"cloudinary://{self.cloudinary_api_key}:{self.cloudinary_api_secret}@{self.cloudinary_cloud_name}"
+        
+        self.old_api = cloudinary.api
+        self.old_utils = cloudinary.utils
+        self.old_requests_get = requests.get
+        cloudinary.api = MockCloudinary.api
+        cloudinary.utils = MockCloudinary.utils
+        requests.get = MockRequests.get
+        yield
+        # teardown code
+        os.environ['CLOUDINARY_URL'] = self.original_cloudinary_url
+        cloudinary.api = self.old_api
+        cloudinary.utils = self.old_utils
+        requests.get = self.old_requests_get
 
     def get_loader(self):
         return CloudinaryDataLoader(self.cloudinary_folder_prefix, self.database)

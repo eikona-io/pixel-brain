@@ -9,6 +9,8 @@ import glob
 import random
 from torchvision.io import read_image, read_file
 from abc import ABC, abstractmethod
+import math
+
 
 class DataLoaderFilter(ABC):
     @abstractmethod
@@ -76,7 +78,7 @@ class DataLoader:
         return self
 
     def __len__(self):
-        return len(self._image_paths) // self._batch_size
+        return int(math.ceil(len(self._image_paths) / self._batch_size))
 
     def _load_image(self, image_path):
         """

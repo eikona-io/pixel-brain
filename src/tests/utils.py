@@ -4,6 +4,8 @@ import io
 import functools
 from typing import Any
 from unittest.mock import MagicMock
+import os
+
 
 class DeleteDatabaseAfterTest:
     def __init__(self, db):
@@ -25,6 +27,8 @@ class StrictMock(MagicMock):
             raise AttributeError(f"'{type(self).__name__}' object's '{self._mock_name}' method is not defined")
         else:
             return super().__call__(*args, **kwargs)
+
+
 def profile_callstack(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -39,3 +43,6 @@ def profile_callstack(func):
         print(s.getvalue())
         return result
     return wrapper
+
+def assert_env_var_present(env_var: str):
+    return env_var in os.environ and os.environ[env_var] != ""

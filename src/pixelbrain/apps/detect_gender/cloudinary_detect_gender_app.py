@@ -16,7 +16,7 @@ class CloudinaryGenderDetector:
     For now we only consider the binary case.
     """
 
-    def __init__(self, user_id: str, num_images: int = 10, download_from_hf: bool = False, model_name: str = 'gender-classification'):
+    def __init__(self, cloudinary_prefix: str, num_images: int = 10, download_from_hf: bool = False, model_name: str = 'gender-classification'):
         """
         Uses a HF model to detect the gender of a user based on their images as stored in the cloudinary processed folder.
         :param user_id: The user id to process
@@ -24,7 +24,7 @@ class CloudinaryGenderDetector:
         :param download_from_hf: If True, downloads the model from Hugging Face
         :param model_name: The name of the model to use. If from Hugging Face, it should be the full model name in the HF hub, else the name of the direcotry where the model is stored under $HOME/
         """
-        self.user_id = user_id
+        self.cloudinary_prefix = cloudinary_prefix
         self.num_images = num_images
         self.download_from_hf = download_from_hf
         self.model_name = model_name
@@ -42,7 +42,11 @@ class CloudinaryGenderDetector:
 
         local_temp_database = Database(database_id=uuid4().hex)
 
-        dataloader = CloudinaryDataLoader(f'user_photos/{self.user_id}/processed', local_temp_database, min(MAX_BATCH_SIZE, self.num_images))
+        dataloader = CloudinaryDataLoader(self.cloudinary_prefix, local_temp_database, min(MAX_BATCH_SIZE, self.num_images))
+        if not len(dataloader):
+            import os
+            raise RuntimeError(f"There are no images in {self.cloudinary_prefix}, defined cloudinary url: {os.getenv('CLOUDINARY_URL')}")
+
 
         max_iterations = max(1, self.num_images // dataloader._batch_size)
         results_tensor_list = []
@@ -54,5 +58,4 @@ class CloudinaryGenderDetector:
             if i == max_iterations:
                 break
         probability_to_be_female = torch.cat(results_tensor_list, dim=0).mean(dim=0)[0].item()
-        print(f"probability for user {self.user_id} to be female: {probability_to_be_female}")
         return probability_to_be_female
