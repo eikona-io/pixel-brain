@@ -21,14 +21,6 @@ class DeleteDatabaseAfterTest:
                 raise AssertionError(f"{exc_val} (Source: {exc_tb.tb_frame.f_code.co_filename}:{exc_tb.tb_lineno})")
             raise exc_val
 
-class StrictMock(MagicMock):
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if 'return_value' not in self.__dict__ and 'side_effect' not in self.__dict__:
-            raise AttributeError(f"'{type(self).__name__}' object's '{self._mock_name}' method is not defined")
-        else:
-            return super().__call__(*args, **kwargs)
-
-
 def profile_callstack(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

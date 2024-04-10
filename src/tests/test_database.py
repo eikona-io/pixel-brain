@@ -6,7 +6,7 @@ import tempfile
 import time
 import pytest
 from uuid import uuid4
-from utils import profile_callstack, DeleteDatabaseAfterTest, StrictMock
+from utils import profile_callstack, DeleteDatabaseAfterTest
 
 
 def store_field_run(mongo_key=None):
