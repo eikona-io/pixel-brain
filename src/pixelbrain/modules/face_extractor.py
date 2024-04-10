@@ -63,7 +63,7 @@ class FaceExtractorModule(PipelineModule):
             faces = [extracted_face['facial_area'] for extracted_face in extracted_faces]
             for idx, extracted_face in enumerate(extracted_faces):
                 detected_face = extracted_face['facial_area']
-                x, y, w, h = detected_face.values()
+                x, y, w, h, _, _ = detected_face.values()
                 if (x == 0) and (y == 0) and (h == image.shape[0]) and (w == image.shape[1]):
                     # This means he didn't find a face
                     logger.info(f"No face detected in image {image_id}")
@@ -106,7 +106,7 @@ class FaceExtractorModule(PipelineModule):
         :param detected_face: Detected face as a dictionary
         :return: Extracted face as a numpy array
         """
-        x, y, w, h = detected_face.values()
+        x, y, w, h, _, _ = detected_face.values()
         scaled_x, scaled_y, scaled_w, scaled_h = increase_rectangle_space(x, y, w, h, ratio)
         face_image = image[scaled_y : scaled_y + scaled_h, scaled_x : scaled_x + scaled_w, :]
         return face_image

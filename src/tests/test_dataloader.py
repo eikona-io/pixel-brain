@@ -67,10 +67,10 @@ def test_filter_method():
 
 
     # sanity
-    assert len(dl) == 42, "there should be 42 images"
+    assert len(dl) == 44, "there should be 44 images"
     dl.filter("category")
-    assert len(dl) == 39, "there should be 39 image with category"
+    assert len(dl) == 41, "there should be 41 image with category"
     dl.filter("category", "1")
-    assert len(dl) == 20, "there should be 20 image with category 1"
+    assert len(dl) == 21, "there should be 21 image with category 1"
 
     db.delete_db()
