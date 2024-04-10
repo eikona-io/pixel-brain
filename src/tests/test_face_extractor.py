@@ -16,7 +16,7 @@ def test_face_extractor_module():
         module = FaceExtractorModule(data, database, image_save_path=tempdir)
         module.process()
         num_images = len(os.listdir(tempdir))
-        assert num_images == 31, "there should be 31 faces"
+        assert num_images == 31 + 2 * 3, "there should be 31 faces from portrait images and 2 * 3 faces from two triplete images"
     
     database.delete_db()
 
