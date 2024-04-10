@@ -1,55 +1,14 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 import torch
 from torchvision.io.image import read_file, decode_image, ImageReadMode
 import pytest
 import cloudinary
 import requests
 import pickle
-from cloudinary.api_client.execute_request import Response
 from cloudinary.exceptions import AuthorizationRequired
 from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 import os
-
-
-root_dir = os.path.dirname(os.path.realpath(__file__))
-MOCK_RESPONSE_PATH = os.path.join(root_dir, "mock_data", "mock_cloudinary_response.pkl")
-TEST_IMAGE_PATH = os.path.join(root_dir, "mock_data", "test_image.jpg")
-MOCK_CLOUD_NAME = "test_cloud"
-MOCK_API_KEY = "test_key"
-MOCK_API_SECRET = "test_secret"
-MOCK_IMAGE_ID = "123"
-MOCK_PREFIX = "user_photos/mock_user_name"
-MOCK_PUBLIC_ID = f"{MOCK_PREFIX}/{MOCK_IMAGE_ID}"
-MOCK_IMAGE_URL = f"https://res.cloudinary.com/{MOCK_CLOUD_NAME}/image/upload/v1706189351/{MOCK_PREFIX}/{MOCK_IMAGE_ID}.jpg"
-
-
-class MockResponse:
-     headers = {"x-featureratelimit-limit": '200', "x-featureratelimit-reset": '200', "x-featureratelimit-remaining": '200'}
-
-
-class MockCloudinary:
-    class api:
-        @staticmethod
-        def ping():
-            cloudinary_url = os.environ.get('CLOUDINARY_URL')
-            if not cloudinary_url:
-                raise AuthorizationRequired("Cloudinary credentials not found. Please set them as environment variables.")
-            cloud_name = cloudinary_url.split('@')[1].split('.')[0]
-            api_key = cloudinary_url.split('//')[1].split(':')[0]
-            api_secret = cloudinary_url.split(':')[2].split('@')[0]
-            if cloud_name != MOCK_CLOUD_NAME or api_key != MOCK_API_KEY or api_secret != MOCK_API_SECRET:
-                raise AuthorizationRequired("Invalid credentials")
-            return Response({'status': 'ok'}, MockResponse())
-        def resources(type='upload', prefix='', max_results=500):
-            if prefix == MOCK_PREFIX:
-                return {'resources': [{'secure_url': MOCK_IMAGE_URL, 'public_id': MOCK_PUBLIC_ID}]}
-            else:
-                return {'resources': []}
-        
-    class utils:
-        @staticmethod
-        def cloudinary_url(public_id, **combined_options):
-            return [MOCK_IMAGE_URL]
+from tests.test_utils import MockCloudinary, MOCK_IMAGE_URL, MOCK_RESPONSE_PATH, MOCK_PREFIX, MOCK_CLOUD_NAME, MOCK_API_KEY, MOCK_API_SECRET, MOCK_IMAGE_ID, TEST_IMAGE_PATH, MOCK_PUBLIC_ID
 
 
 class MockRequests:
@@ -61,7 +20,6 @@ class MockRequests:
             return response
         else:
             return requests.Response()
-
 
 
 class TestCloudinaryDataLoader:
@@ -76,7 +34,7 @@ class TestCloudinaryDataLoader:
         self.cloudinary_api_secret = MOCK_API_SECRET
         self.wrong_cloudinary_api_secret = "mock_wrong_secret"
         self.test_image = decode_image(read_file(TEST_IMAGE_PATH), ImageReadMode.UNCHANGED)
-        self.original_cloudinary_url = os.environ.get('CLOUDINARY_URL')
+        self.original_cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
         os.environ['CLOUDINARY_URL'] = f"cloudinary://{self.cloudinary_api_key}:{self.cloudinary_api_secret}@{self.cloudinary_cloud_name}"
         
         self.old_api = cloudinary.api

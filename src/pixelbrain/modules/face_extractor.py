@@ -9,6 +9,10 @@ from pixelbrain.pre_processors.deepface import DeepfacePreprocessor
 from PIL import Image
 import os
 import numpy as np
+from pixelbrain.utils import increase_rectangle_space, get_logger
+
+
+logger = get_logger(__name__)
 
 
 class FaceExtractorModule(PipelineModule):
@@ -22,7 +26,8 @@ class FaceExtractorModule(PipelineModule):
                  h_ratio = 0.6,
                  w_ratio = 0.6,
                  image_save_path: str = None,
-                 clone_original_image_metadata = True):
+                 clone_original_image_metadata = True,
+                 increase_face_ratio: float = 2.5):
         """
         Initialize the FaceExtractorModule.
         
@@ -39,6 +44,7 @@ class FaceExtractorModule(PipelineModule):
         self._w_ratio = w_ratio
         self._save_image_path = image_save_path
         self._clone_metadata = clone_original_image_metadata
+        self.increase_face_ratio = increase_face_ratio
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
@@ -47,50 +53,52 @@ class FaceExtractorModule(PipelineModule):
         :param image_ids: List of image ids
         :param processed_image_batch: Batch of preprocessed images
         """
+        # TODO: Move to a model that can take batches (both SAM and DeepFace can't)
         for image_id, image in zip(image_ids, processed_image_batch):
-            try:
-                extracted_face = DeepFace.extract_faces(image.numpy(),
-                                                        detector_backend='retinaface',
-                                                        enforce_detection=True)
+            image = image.numpy()
+            extracted_faces = DeepFace.extract_faces(image,
+                                                    detector_backend='retinaface',
+                                                    enforce_detection=False)
 
-                if len(extracted_face) != 1:
-                    # more then one face
-                    # we don't want this image
-                    break
+            faces = [extracted_face['facial_area'] for extracted_face in extracted_faces]
+            for idx, extracted_face in enumerate(extracted_faces):
+                detected_face = extracted_face['facial_area']
+                x, y, w, h = detected_face.values()
+                if (x == 0) and (y == 0) and (h == image.shape[0]) and (w == image.shape[1]):
+                    # This means he didn't find a face
+                    logger.info(f"No face detected in image {image_id}")
+                    continue
 
-                detected_face = extracted_face[0]['facial_area']
-                extracted_face = self._extract_face(image, detected_face)
-                face_image_path = self._save_image(extracted_face, image_id)
+                masked_image = self.mask_faces(image, faces, idx_of_face_to_keep=idx)
+                face_frame = self._get_face_frame(masked_image, detected_face, ratio=self.increase_face_ratio)
+                face_image_path = self._save_image(face_frame, image_id, idx)
 
                 # add to db
-                new_image_id = f'{image_id}_face'
+                new_image_id = f'{image_id}_face{idx}'
                 self._database.add_image(new_image_id, face_image_path)
                 if self._clone_metadata:
                     self._database.clone_row(image_id, new_image_id)
                 self._database.store_field(new_image_id, 'is_augmented_face', 'True')
 
-            except Exception as err:
-                # no face detetectad raises an error
-                pass
-
-    def _save_image(self, extracted_face: np.ndarray, original_image_id: str) -> str:
+    def _save_image(self, extracted_face: np.ndarray, original_image_id: str, idx: int) -> str:
         """
         Save the extracted face image.
         
         :param extracted_face: Extracted face as a numpy array
         :param original_image_id: ID of the original image
+        :param idx: The index of the face in the image
         :return: Path of the saved face image
         """
         image_path = self._database.get_field(original_image_id, 'image_path')
         image_dir = self._save_image_path if self._save_image_path else  os.path.dirname(image_path)
         image_filename = os.path.basename(image_path).split(".")[0]
-        face_path = f"{image_dir}/{image_filename}_face.png"
+        face_path = f"{image_dir}/{image_filename}_face{idx}.png"
 
         extracted_face_pil = Image.fromarray(extracted_face.astype('uint8'), 'RGB')
         extracted_face_pil.save(face_path)
         return face_path
 
-    def _extract_face(self, image: torch.Tensor, detected_face: Dict[str, int]) -> np.ndarray:
+    def _get_face_frame(self, image: np.ndarray, detected_face: Dict[str, int], ratio: float=2.0) -> np.ndarray:
         """
         Extract the face from the image.
         
@@ -98,18 +106,22 @@ class FaceExtractorModule(PipelineModule):
         :param detected_face: Detected face as a dictionary
         :return: Extracted face as a numpy array
         """
-        x, y, w, h, _, _ = detected_face.values()
-        face_center_x = x + w / 2
-        face_center_y = y + h / 2
-        image_h, image_w, _ = image.shape
-        target_image_h = int(image_h * self._h_ratio)
-        target_image_w = int(image_w * self._w_ratio)
-        h_offset_from_face_center = target_image_h / 2
-        w_offset_from_face_center = target_image_w / 2
-
-        start_x = int(max(face_center_x - w_offset_from_face_center, 0))
-        start_y = int(max(face_center_y - h_offset_from_face_center, 0))
-        end_x = int(min(face_center_x + w_offset_from_face_center, image_w))
-        end_y = int(min(face_center_y + h_offset_from_face_center, image_h))
-        face_image = image[start_y:end_y, start_x:end_x, :].numpy()
+        x, y, w, h = detected_face.values()
+        scaled_x, scaled_y, scaled_w, scaled_h = increase_rectangle_space(x, y, w, h, ratio)
+        face_image = image[scaled_y : scaled_y + scaled_h, scaled_x : scaled_x + scaled_w, :]
         return face_image
+
+    @staticmethod
+    def mask_faces(image: np.ndarray, faces: List[Dict[str, int]], idx_of_face_to_keep: int = -1) -> np.ndarray:
+        """
+        Masks all give faces from an image except the face at the given index.
+        """
+        masked_image = image.copy()
+        for idx, face in enumerate(faces):
+            if idx == idx_of_face_to_keep:
+                continue
+            x, y, w, h = face.values()
+            mask = np.ones_like(image)
+            mask[y : y + h, x : x + w] = 0
+            masked_image *= mask
+        return masked_image

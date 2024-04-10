@@ -6,7 +6,8 @@ import tempfile
 import time
 import pytest
 from uuid import uuid4
-from utils import profile_callstack, DeleteDatabaseAfterTest
+from tests.test_utils import DeleteDatabaseAfterTest
+from tests.test_utils import profile_callstack
 
 
 def store_field_run(mongo_key=None):

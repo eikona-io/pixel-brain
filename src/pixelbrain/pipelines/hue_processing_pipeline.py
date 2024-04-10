@@ -1,7 +1,7 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.pipeline import TaggingPipeline
-from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
+from pixelbrain.modules.face_extractor import FaceExtractorModule
 from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
 from pixelbrain.utils import create_timestamp
@@ -15,10 +15,8 @@ class HueProcessingPipeline(TaggingPipeline):
                  local_results_dir: str,
                  dataloader: DataLoader,
                  user_id: str,
-                 maximal_medium_ratio: float = 1,
-                 maximal_wide_ratio: float = 1,
-                 include_background: bool = False,
-                 path_to_sam_checkpoint: str = None):
+                 increase_face_ratio: int = 2.5,
+                 ):
         super().__init__(local_results_dir, None)
         
         current_run_results_dir = join(local_results_dir, create_timestamp())
@@ -26,9 +24,7 @@ class HueProcessingPipeline(TaggingPipeline):
         identity_db = Database(database_id=uuid4().hex)
 
         self._data_processors = [
-            GroundedSAMDetectorModule(dataloader, dataloader._database, 'person', 'foobar', results_dir=current_run_results_dir,
-                                      maximal_medium_ratio=maximal_medium_ratio, maximal_wide_ratio=maximal_wide_ratio,
-                                      include_background=include_background, path_to_checkpoint=path_to_sam_checkpoint),
+            FaceExtractorModule(dataloader, dataloader._database, image_save_path=current_run_results_dir, increase_face_ratio=increase_face_ratio),
             IdentityTaggingPipeline(current_run_results_dir, identity_db, apply_people_detector=False),
             UploadToCloudinaryModule(identity_db, user_id, filtering_field_name='assigned_identity'),
         ]

@@ -1,5 +1,5 @@
 from pixelbrain.apps.detect_gender.cloudinary_detect_gender_app import CloudinaryGenderDetector
-from utils import assert_env_var_present
+from tests.test_utils import assert_env_var_present
 
 
 def test_cloudinary_gender_detector_app():
