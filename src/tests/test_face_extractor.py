@@ -31,3 +31,4 @@ def test_face_extractor_module_subset():
         assert num_images == 1, "there should be 1 faces"
     
     database.delete_db()
+test_face_extractor_module_subset()
