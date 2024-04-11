@@ -147,6 +147,11 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         # Apply HDBSCAN clustering
         hdbscan = HDBSCAN(min_cluster_size=self._min_group_size)
         labels = hdbscan.fit_predict(stacked_vectors)
+        if all(label == -1 for label in labels):
+            # its all images of the same person
+            # so all variations upon that person looks like noise
+            # so we assign the same identity to all images
+            labels = [1 for _ in labels]
         identities = {label: f"{self._get_unique_datatime_str()}_{label}" for label in labels} # same label will override but that's OK
 
         # Assign identities based on clusters
