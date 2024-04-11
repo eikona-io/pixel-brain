@@ -120,7 +120,7 @@ class FaceExtractorModule(PipelineModule):
         for idx, face in enumerate(faces):
             if idx == idx_of_face_to_keep:
                 continue
-            x, y, w, h = face.values()
+            x, y, w, h, _, _ = face.values()
             mask = np.ones_like(image)
             mask[y : y + h, x : x + w] = 0
             masked_image *= mask
