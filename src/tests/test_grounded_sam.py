@@ -3,6 +3,8 @@ from pixelbrain.database import Database
 import pytest
 from pixelbrain.utils import PIXELBRAIN_PATH
 
+
+@pytest.mark.skip(reason="We don't want to install SAM on the CI at the moment")
 @pytest.mark.slow_suit
 def test_grounded_sam_detector():
     from pixelbrain.modules.grounded_sam_detector import GroundedSAMDetectorModule
