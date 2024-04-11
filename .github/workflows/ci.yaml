@@ -28,4 +28,4 @@ jobs:
         CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
         MONGODB_ATLAS_KEY: ${{ secrets.MONGODB_ATLAS_KEY }}
       run: |
-        ./scripts/run_unit_tests.sh --time-tests
+        ./scripts/run_unit_tests.sh --time-tests --include-slow-suit
