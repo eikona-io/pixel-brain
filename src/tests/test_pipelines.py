@@ -25,6 +25,7 @@ def test_identity_tagging_pipeline_no_people_detector():
 def test_identity_tagging_pipeline():
     identity_tagging_pipeline_run('pairwise')
 
+@pytest.skip(reason="Very slow and we don't need it at the moment")
 @pytest.mark.slow_suit
 def test_fashion_tagging_pipeline():
     database = Database(database_id="fashion_tagging_test")

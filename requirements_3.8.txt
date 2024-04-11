@@ -135,3 +135,4 @@ Werkzeug==3.0.1
 wrapt==1.14.1
 zipp==3.17.0
 transformers==4.39.3
+pytest-xdist==3.5.0
