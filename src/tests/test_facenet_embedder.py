@@ -67,7 +67,7 @@ def calulate_subjects_distances(db: Database):
 
     return self_distances, closest_other_distances
 
-@pytest.skip(reason="It fails and we don't need it at the moment")
+@pytest.mark.skip(reason="It fails and we don't need it at the moment")
 @pytest.mark.slow_suit
 def test_facenet_embedder_threshold(draw_plt=False):
     database = Database(database_id="facenet_embedder_test")
