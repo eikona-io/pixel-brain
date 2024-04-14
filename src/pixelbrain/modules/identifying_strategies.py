@@ -11,6 +11,7 @@ class IdentifyingStrategy(ABC):
     Base class for identifying strategies.
     This strategies should take image vectors and assign id's to images that belong to the same instance.
     """
+
     @abstractmethod
     def process(self, image_ids: List[str], image_vecs: List[np.ndarray]):
         """
@@ -43,7 +44,15 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
     If an image has already been assigned an identity (for a case such as im1--im2-----im3), this identity will be adopted for the third image.
     This strategy will not cover images where the distance to other images of same instance is large.
     """
-    def __init__(self, database: Database, vector_field_name: str, identity_field_name: str, distance_threshold: int, exclude_group: str = None):
+
+    def __init__(
+        self,
+        database: Database,
+        vector_field_name: str,
+        identity_field_name: str,
+        distance_threshold: int,
+        exclude_group: str = None,
+    ):
         """
         Initialize the PairwiseIdentifyingStrategy.
 
@@ -75,22 +84,30 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
                 # image was paired
                 continue
 
-            nearest_images, distances = self._db.query_vector_field(self._vector_field_name, image_vec, n_results=10)
+            nearest_images, distances = self._db.query_vector_field(
+                self._vector_field_name, image_vec, n_results=10
+            )
 
             if self._exclude_group is not None:
                 if self._exclude_group not in image_doc:
-                    raise ValueError(f"Exclude group field {self._exclude_group} is used but image {image_id} does not have it")
+                    raise ValueError(
+                        f"Exclude group field {self._exclude_group} is used but image {image_id} does not have it"
+                    )
                 self_exclude_group_value = image_doc[self._exclude_group]
 
             for nearest_image, distance in zip(nearest_images, distances):
                 if distance > self._distance_threshold:
                     # image too far away (also the next ones..)
                     break
-                if self._exclude_group is not None and nearest_image.get(self._exclude_group, None) == self_exclude_group_value:
+                if (
+                    self._exclude_group is not None
+                    and nearest_image.get(self._exclude_group, None)
+                    == self_exclude_group_value
+                ):
                     # image is in the same exclude group
                     continue
 
-                nearest_image_id = nearest_image['_id']
+                nearest_image_id = nearest_image["_id"]
                 if nearest_image_id == image_id:
                     # same image
                     continue
@@ -101,7 +118,9 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
                 else:
                     # new id required
                     identity = self._get_unique_datatime_str()
-                    self._db.store_field(nearest_image_id, self._identity_field_name, identity)
+                    self._db.store_field(
+                        nearest_image_id, self._identity_field_name, identity
+                    )
                 self._db.store_field(image_id, self._identity_field_name, identity)
                 break
 
@@ -113,7 +132,14 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
     But, it can also handle instances with images with large distance apart.
     This strategy runtime complexity is O(nlogn) (expected) and O(n) in space - which might prohibit large datasets from fitting in memory.
     """
-    def __init__(self, database: Database, identity_field_name: str, min_group_size: int = 2):
+
+    def __init__(
+        self,
+        database: Database,
+        identity_field_name: str,
+        min_group_size: int = 2,
+        eps: float = 0.1,
+    ):
         """
         Initialize the HDBSCANIdentifyingStrategy.
 
@@ -126,6 +152,7 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         self._min_group_size = min_group_size
         self._vectors = []
         self._image_ids = []
+        self._eps = eps
 
     def process(self, image_ids: List[str], image_vecs: List[np.ndarray]):
         """
@@ -145,17 +172,23 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         stacked_vectors = np.vstack(self._vectors)
 
         # Apply HDBSCAN clustering
-        hdbscan = HDBSCAN(min_cluster_size=self._min_group_size)
+        hdbscan = HDBSCAN(
+            min_cluster_size=self._min_group_size, allow_single_cluster=True, cluster_selection_epsilon=self._eps
+        )
         labels = hdbscan.fit_predict(stacked_vectors)
         if all(label == -1 for label in labels):
             # its all images of the same person
             # so all variations upon that person looks like noise
             # so we assign the same identity to all images
             labels = [1 for _ in labels]
-        identities = {label: f"{self._get_unique_datatime_str()}_{label}" for label in labels} # same label will override but that's OK
+        identities = {
+            label: f"{self._get_unique_datatime_str()}_{label}" for label in labels
+        }  # same label will override but that's OK
 
         # Assign identities based on clusters
         for image_id, label in zip(self._image_ids, labels):
             if label != -1:  # -1 is for noise points
                 identity = identities[label]
-                self._database.store_field(image_id, self._identity_field_name, identity)
+                self._database.store_field(
+                    image_id, self._identity_field_name, identity
+                )
