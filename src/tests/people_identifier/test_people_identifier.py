@@ -62,11 +62,7 @@ def people_identifier_module_run(strategy, data_path, nof_images_per_subject):
 
 @pytest.mark.slow_suit
 def test_people_identifier_module_pairwise_strategy():
-    people_identifier_module_run(
-        "pairwise",
-        f"{PIXELBRAIN_PATH}/assets/test_data/subjects",
-        nof_images_per_subject=3,
-    )
+    people_identifier_module_run("pairwise")
 
 
 @pytest.mark.slow_suit
