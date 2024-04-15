@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from typing import List, Dict, Optional
-from pixelbrain.pre_processors.grounded_sam import GroundedSAMPreprocessor
+from pixelbrain.pre_processors.pil_image import PilImagePreprocessor
 from PIL import Image
 from lang_sam import LangSAM
 import numpy as np
@@ -64,7 +64,7 @@ class GroundedSAMDetectorModule(PipelineModule):
         :param include_background: Whether to include the background in the results
         :param path_to_checkpoint: The path to the checkpoint of the grounded sam model. If None, downloads uses the default model from HF.
         """
-        super().__init__(data, database, GroundedSAMPreprocessor(), filters)
+        super().__init__(data, database, PilImagePreprocessor(), filters)
         self._detection_string = detection_string
         self._metadata_field_name = metadata_field_name
         self._grounded_sam = LangSAM(ckpt_path=path_to_checkpoint)
