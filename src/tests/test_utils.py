@@ -83,8 +83,6 @@ class DeleteDatabaseAfterTest:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.db.delete_db()
         if exc_type:
-            if exc_type is AssertionError:
-                raise AssertionError(f"{exc_val} (Source: {exc_tb.tb_frame.f_code.co_filename}:{exc_tb.tb_lineno})")
             raise exc_val
 
 

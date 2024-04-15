@@ -1,7 +1,7 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.pipeline import PipelineModule
-from pixelbrain.pre_processors.pil_image import PilImagePreprocessor
+from pixelbrain.pre_processors.pick_score import PickScorePreprocessor
 from typing import List, Dict
 from transformers import AutoProcessor, AutoModel
 import torch
@@ -17,44 +17,35 @@ class PickScorerModule(PipelineModule):
         pick_score_field_name: str = "pick_score",
         filters: Dict[str, str] = None,
     ):
-        super().__init__(data, database, PilImagePreprocessor(), filters)
+        super().__init__(data, database, PickScorePreprocessor(), filters)
 
-        self._pre_processor = AutoProcessor.from_pretrained(
+        self._text_processor = AutoProcessor.from_pretrained(
             "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
         )
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self._device = "cuda" if torch.cuda.is_available() else "cpu"
         self._model = (
-            AutoModel.from_pretrained("yuvalkirstain/PickScore_v1").eval().to(device)
+            AutoModel.from_pretrained("yuvalkirstain/PickScore_v1").eval().to(self._device)
         )
-        self._tokenized_prompt = self._pre_processor(
+        self._tokenized_prompt = self._text_processor(
             text=prompt,
             padding=True,
             truncation=True,
             max_length=77,
             return_tensors="pt",
-        )
+        ).to(self._device)
         self._pick_score_fieild_name = pick_score_field_name
 
     def _process(self, image_ids: List[str], processed_image_batch):
-        image_inputs = self._pre_processor(
-            images=processed_image_batch,
-            padding=True,
-            truncation=True,
-            max_length=77,
-            return_tensors="pt",
-        )
-
         with torch.no_grad():
-            image_embs = self._model.get_image_features(**image_inputs)
+            processed_image_batch = processed_image_batch.to(self._device)
+            image_embs = self._model.get_image_features(processed_image_batch)
             image_embs = image_embs / torch.norm(image_embs, dim=-1, keepdim=True)
 
             text_embs = self._model.get_text_features(**self._tokenized_prompt)
             text_embs = text_embs / torch.norm(text_embs, dim=-1, keepdim=True)
 
-            scores = self.model.logit_scale.exp() * (text_embs @ image_embs.T)[0]
-            probs = torch.softmax(scores, dim=-1)
-
-            scores = probs.cpu().tolist()
+            scores = self._model.logit_scale.exp() * (text_embs @ image_embs.T)[0]
+            scores = scores.cpu().tolist()
 
         for pick_score, image_id in zip(scores, image_ids):
             self._database.store_field(
