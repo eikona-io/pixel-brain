@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 export PIXELBRAIN_PATH=$(git rev-parse --show-toplevel)
 if [ -z "$VIRTUAL_ENV" ]; then
     echo "Activating virtual environment..."
