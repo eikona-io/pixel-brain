@@ -15,4 +15,4 @@ torch==2.1.0
 torchvision==0.16.0
 tqdm==4.66.2
 transformers==4.40.1
-tf-keras==2.16.0
+tf_keras==2.16.0
