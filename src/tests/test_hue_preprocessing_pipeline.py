@@ -27,7 +27,8 @@ class TestHuePreprocessingPipeline:
             MockCloudinary.uploader.temp_dir = tempdir
             cloudinary.uploader.upload = MockCloudinary.uploader.upload
             dataloader = DataLoader(MOCK_HUE_DATA_PATH, self.local_temp_database)
-            h = HueProcessingPipeline(join(tempdir, 'hue_pipeline'), dataloader, TEST_USER_ID)
+            local_results_dir = join(tempdir, 'hue_pipeline')
+            h = HueProcessingPipeline(local_results_dir, dataloader, TEST_USER_ID)
             h.process()
             
             processed_photos_dir = join(tempdir, 'user_photos', TEST_USER_ID, 'processed')
