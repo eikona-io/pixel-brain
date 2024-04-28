@@ -4,6 +4,7 @@ from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 from pixelbrain.database import Database
 from typing import List
 from pixelbrain.utils import get_logger
+from uuid import uuid4
 
 
 class FaceSimilartyScorer:
@@ -35,7 +36,7 @@ class FaceSimilartyScorer:
     ):
         self._database_created = False
         if not database:
-            database = Database("cloudinary-face-similarty-scorer")
+            database = Database(str(uuid4()))
             self._database_created = True
 
         if source_type == 'cloudinary':
