@@ -103,11 +103,11 @@ def test_most_common_identity_filter():
         mock_db.store_field("img3", "identity", "personB")
 
         # Initialize the MostCommonIdentityFilter
-        identity_filter = MostCommonIdentityFilter(mock_db, "identity")
+        identity_filter = MostCommonIdentityFilter("identity")
 
         # Test the filter
         image_ids = ["img1", "img2", "img3"]
-        filtered_ids = identity_filter.filter(image_ids)
+        filtered_ids = identity_filter.filter(mock_db, image_ids)
 
         # Assert that only images with the most common identity are returned
         assert len(filtered_ids) == 2, "Filter should return two images"

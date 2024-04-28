@@ -2,6 +2,7 @@
 set -e
 
 export PIXELBRAIN_PATH=$(git rev-parse --show-toplevel)
+export PYTHONPATH=$PIXELBRAIN_PATH/src/:$PYTHONPATH
 if [ -z "$VIRTUAL_ENV" ]; then
     echo "Activating virtual environment..."
     VENV_PATH="$PIXELBRAIN_PATH/venv"
