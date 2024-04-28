@@ -29,32 +29,14 @@ class PeopleIdentifierModule(PipelineModule):
         :param vector_field_name: Name of the field in the database where the vector is stored
         :param identity_field_name: Name of the field in the database where to store the identity
         :param strategy: Strategy for identifying people, either 'pairwise' or 'hdbscan'
-        :param distance_threshold: Threshold for the distance between vectors for identification, relevant only in 'pairwise' strategy
         :param algo_params: Additional parameters for the strategy. For HDBSCAN primarly min_samples and min_cluster_size, for pairwise pairwise_exclude_group and distance_threshold (290).
-        :param pairwise_exclude_group: Group field to exclude images in pairwise identification, relevant only in 'pairwise' strategy
-        :param eps: Epsilon for the HDBSCAN clustering, relevant only in 'hdbscan' strategy, should be modified with care
         """
         super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name
-<<<<<<< HEAD
-        if strategy == "pairwise":
-            self._identify_strategy = PairwiseIdentifyingStrategy(
-                database,
-                vector_field_name,
-                identity_field_name,
-                distance_threshold,
-                pairwise_exclude_group,
-            )
-        elif strategy == "hdbscan":
-            self._identify_strategy = HDBSCANIdentifyingStrategy(
-                database, identity_field_name, eps=eps
-            )
-=======
         if strategy == 'pairwise':
             self._identify_strategy = PairwiseIdentifyingStrategy(database, vector_field_name, identity_field_name, **algo_params)
         elif strategy == 'hdbscan':
             self._identify_strategy = HDBSCANIdentifyingStrategy(database, identity_field_name, **algo_params)
->>>>>>> 32bacf4 (Corrected HDBSCAN algo to include parameters min_samples and min_cluster_size instead of eps)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 

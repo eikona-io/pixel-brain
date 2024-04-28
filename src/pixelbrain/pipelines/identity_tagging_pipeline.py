@@ -12,7 +12,7 @@ class IdentityTaggingPipeline(TaggingPipeline):
                  identity_field_name: str = 'assigned_identity',
                  apply_people_detector: bool = True,
                  identifying_strategy: str = 'hdbscan',
-                 pairwise_exclude_group: str = None):
+                 exclude_group: str = None):
         super().__init__(images_path, database)
         
         # might parameterize the batch sizes in the future
@@ -34,6 +34,6 @@ class IdentityTaggingPipeline(TaggingPipeline):
                                    filters=identify_filters,
                                    vector_field_name='face_embedding',
                                    identity_field_name=identity_field_name,
-                                   pairwise_exclude_group=pairwise_exclude_group,
+                                   exclude_group=exclude_group,
                                    strategy=identifying_strategy)
         ])
