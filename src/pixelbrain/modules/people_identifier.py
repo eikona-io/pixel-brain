@@ -29,7 +29,7 @@ class PeopleIdentifierModule(PipelineModule):
         :param vector_field_name: Name of the field in the database where the vector is stored
         :param identity_field_name: Name of the field in the database where to store the identity
         :param strategy: Strategy for identifying people, either 'pairwise' or 'hdbscan'
-        :param algo_params: Additional parameters for the strategy. For HDBSCAN primarly min_samples and min_cluster_size, for pairwise pairwise_exclude_group and distance_threshold (290).
+        :param algo_params: Additional parameters for the strategy. For HDBSCAN primarly min_samples and min_cluster_size, for pairwise exclude_group and distance_threshold (290).
         """
         super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name

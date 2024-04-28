@@ -29,7 +29,7 @@ def create_dataloader(number_of_subjects, database, tempdir, add_objects=True):
         identity_dir = identity_dirs[identity]
         identity_images = glob(f"{identity_dir}/*")
         random.shuffle(identity_images)
-        num_images_per_this_identity = int(len(identity_images) * random.randint(5,10) * 0.1)
+        num_images_per_this_identity = int(len(identity_images) * random.randint(75,100) * 0.01)
         identity_images = identity_images[:num_images_per_this_identity]
         for idx, image_path in enumerate(identity_images):
             _, extension = os.path.splitext(image_path)
