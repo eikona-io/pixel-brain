@@ -2,6 +2,7 @@
 set -e
 
 export PIXELBRAIN_PATH=$(git rev-parse --show-toplevel)
+export PYTHONPATH=$PIXELBRAIN_PATH/src/:$PYTHONPATH
 if [ -z "$VIRTUAL_ENV" ]; then
     echo "Activating virtual environment..."
     VENV_PATH="$PIXELBRAIN_PATH/venv"
@@ -38,7 +39,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [[ "$include_slow_suit" == "1" ]]; then
-  pytest $PIXELBRAIN_PATH/src/tests -n auto $time_tests
+  pytest $PIXELBRAIN_PATH/src/tests -n 4 $time_tests
 else
-  pytest $PIXELBRAIN_PATH/src/tests -m "not slow_suit" -n auto $time_tests
+  pytest $PIXELBRAIN_PATH/src/tests -m "not slow_suit" -n 4 $time_tests
 fi

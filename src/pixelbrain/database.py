@@ -1,4 +1,3 @@
-from pixelbrain.mongo_pipelines import generate_aggregation_pipeline
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from montydb import MontyClient
 import chromadb
@@ -214,11 +213,9 @@ class Database:
         Aggregate ids by a given field to a list, and sort by count if required.
         :param field_name: The field name to aggregate
         :param sort_order: The sort order of the aggregation. -1: descending, 1: ascending, 0: no sort
-        :return: The aggregation result.
+        :return: The aggregation result. In the form: [{'count': int, '_id_list': List[str]}]
         """
-        aggregation_pipeline = generate_aggregation_pipeline(field_name, sort_order)
         # This is a workaround for the fact that montydb does not support aggregation pipeline
-        # return list(self._db.images.aggregate(aggregation_pipeline))
         df = pd.DataFrame(self.get_all_images())
         df = df[df[field_name].notna()]
         df_agg = df.groupby(field_name).agg(count=(field_name, 'size'), _id_list=('_id', lambda x: list(x)))
@@ -226,6 +223,15 @@ class Database:
             df_agg = df_agg.sort_values('count', ascending=(True if sort_order == 1 else False))
         return df_agg.to_dict('records')
 
+    def query_most_common(self, field_name: str, n: int = 1) -> List[dict]:
+        """
+        Query the most common values of a field.
+        """
+        # This is a workaround for the fact that montydb does not support aggregation pipeline
+        image_docs_with_value = self.find_images_with_value(field_name)
+        df = pd.DataFrame(image_docs_with_value)
+        df = df.groupby(field_name).size().sort_values(ascending=False)
+        return df.head(n).index.tolist()
 
     def export_to_csv(self, file_path: str):
         """

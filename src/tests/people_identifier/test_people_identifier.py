@@ -1,7 +1,7 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from pixelbrain.modules.embedders import FacenetEmbbedderModule
-from pixelbrain.modules.people_identifier import PeopleIdentifierModule
+from pixelbrain.modules.people_identifier import PeopleIdentifierModule, MostCommonIdentityFilter
 import re
 import pytest
 from pixelbrain.utils import PIXELBRAIN_PATH
@@ -90,3 +90,27 @@ def test_people_identifier_module_hdbscan_strategy_one_person():
         f"{PIXELBRAIN_PATH}/src/tests/people_identifier/test_identity_2",
         nof_images_per_subject=12,  # 14 images for subject 2, in 2 we can't find a face
     )
+
+def test_most_common_identity_filter():
+    # Setup a mock database with a few images having different identities
+    mock_db = Database(database_id="test_db")
+    with DeleteDatabaseAfterTest(mock_db):
+        mock_db.add_image("img1", "path/to/img1")
+        mock_db.store_field("img1", "identity", "personA")
+        mock_db.add_image("img2", "path/to/img2")
+        mock_db.store_field("img2", "identity", "personA")
+        mock_db.add_image("img3", "path/to/img3")
+        mock_db.store_field("img3", "identity", "personB")
+
+        # Initialize the MostCommonIdentityFilter
+        identity_filter = MostCommonIdentityFilter("identity")
+
+        # Test the filter
+        image_ids = ["img1", "img2", "img3"]
+        filtered_ids = identity_filter.filter(mock_db, image_ids)
+
+        # Assert that only images with the most common identity are returned
+        assert len(filtered_ids) == 2, "Filter should return two images"
+        assert "img1" in filtered_ids, "img1 should be in the filtered list"
+        assert "img2" in filtered_ids, "img2 should be in the filtered list"
+        assert "img3" not in filtered_ids, "img3 should not be in the filtered list"

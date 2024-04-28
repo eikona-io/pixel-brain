@@ -1,24 +1,31 @@
 from typing import List, Dict
 import torch
 from pixelbrain.database import Database
-from pixelbrain.data_loader import DataLoader
+from pixelbrain.data_loader import DataLoader, DataLoaderFilter
 from pixelbrain.pipeline import PipelineModule
-from pixelbrain.modules.identifying_strategies import PairwiseIdentifyingStrategy, HDBSCANIdentifyingStrategy
+from pixelbrain.modules.identifying_strategies import (
+    PairwiseIdentifyingStrategy,
+    HDBSCANIdentifyingStrategy,
+)
 
 
 class PeopleIdentifierModule(PipelineModule):
     """
     Module for identifying people in images.
     """
-    def __init__(self, data: DataLoader,
-                 database: Database,
-                 vector_field_name: str,
-                 identity_field_name: str = 'identity',
-                 strategy: str = 'hdbscan',
-                 distance_threshold: int = 290,
-                 pairwise_exclude_group: str = None,
-                 filters: Dict[str, str] = None,
-                 eps: float = 0.1):
+
+    def __init__(
+        self,
+        data: DataLoader,
+        database: Database,
+        vector_field_name: str,
+        identity_field_name: str = "identity",
+        strategy: str = "hdbscan",
+        distance_threshold: int = 290,
+        pairwise_exclude_group: str = None,
+        filters: Dict[str, str] = None,
+        eps: float = 0.1,
+    ):
         """
         Initialize the PeopleIdentifierModule.
 
@@ -33,10 +40,18 @@ class PeopleIdentifierModule(PipelineModule):
         """
         super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name
-        if strategy == 'pairwise':
-            self._identify_strategy = PairwiseIdentifyingStrategy(database, vector_field_name, identity_field_name, distance_threshold, pairwise_exclude_group)
-        elif strategy == 'hdbscan':
-            self._identify_strategy = HDBSCANIdentifyingStrategy(database, identity_field_name, eps=eps)
+        if strategy == "pairwise":
+            self._identify_strategy = PairwiseIdentifyingStrategy(
+                database,
+                vector_field_name,
+                identity_field_name,
+                distance_threshold,
+                pairwise_exclude_group,
+            )
+        elif strategy == "hdbscan":
+            self._identify_strategy = HDBSCANIdentifyingStrategy(
+                database, identity_field_name, eps=eps
+            )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 
@@ -48,10 +63,18 @@ class PeopleIdentifierModule(PipelineModule):
         :param image_ids: List of image IDs
         :param processed_image_batch: List of processed image tensors
         """
-        if not all([self._database.does_image_have_field(image_id, self._vector_field_name) for image_id in image_ids]):
+        if not all(
+            [
+                self._database.does_image_have_field(image_id, self._vector_field_name)
+                for image_id in image_ids
+            ]
+        ):
             # Not a face
             return
-        image_vecs = [self._database.get_field(image_id, self._vector_field_name) for image_id in image_ids]
+        image_vecs = [
+            self._database.get_field(image_id, self._vector_field_name)
+            for image_id in image_ids
+        ]
         self._identify_strategy.process(image_ids, image_vecs)
 
     def _post_process(self):
@@ -60,3 +83,28 @@ class PeopleIdentifierModule(PipelineModule):
         """
         self._identify_strategy.post_process()
 
+
+class MostCommonIdentityFilter(DataLoaderFilter):
+    def __init__(self, identity_field_name: str):
+        self._identity_field_name = identity_field_name
+
+    def _find_most_common_identity(self, database: Database):
+        """
+        Retrieves the most common identity from the database by aggregating and sorting the identity counts.
+        """
+        return database.query_most_common(self._identity_field_name, n=1)[0]
+
+    def filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """
+        Filters out images that do not have the most common identity.
+        """
+        most_common_identity = self._find_most_common_identity(database)
+        filtered_image_ids = []
+        for image_id in image_ids:
+            image_data = database.find_image(image_id)
+            if (
+                self._identity_field_name in image_data
+                and image_data[self._identity_field_name] == most_common_identity
+            ):
+                filtered_image_ids.append(image_id)
+        return filtered_image_ids
