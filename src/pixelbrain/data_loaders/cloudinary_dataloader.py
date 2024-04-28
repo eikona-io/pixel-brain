@@ -41,6 +41,7 @@ class CloudinaryDataLoader(DataLoader):
         ids_batch: List[str]
         image_batch: List[torch.Tensor]
         """
+        self._lazy_load_image_paths_if_needed()
         image_batch, ids_batch = [], []
         for _ in range(self._batch_size):
             if not self._image_paths:
