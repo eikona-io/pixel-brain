@@ -169,6 +169,8 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         This method applies HDBSCAN clustering and assigns identities based on clusters.
         """
         # Stack vectors for HDBSCAN
+        if not self._vectors:
+            raise ValueError("No vectors to process")
         stacked_vectors = np.vstack(self._vectors)
 
         # Apply HDBSCAN clustering

@@ -85,27 +85,26 @@ class PeopleIdentifierModule(PipelineModule):
 
 
 class MostCommonIdentityFilter(DataLoaderFilter):
-    def __init__(self, database: Database, identity_field_name: str):
-        self._database = database
+    def __init__(self, identity_field_name: str):
         self._identity_field_name = identity_field_name
-        self._most_common_identity = self._find_most_common_identity()
 
-    def _find_most_common_identity(self):
+    def _find_most_common_identity(self, database: Database):
         """
         Retrieves the most common identity from the database by aggregating and sorting the identity counts.
         """
-        return self._database.query_most_common(self._identity_field_name, n=1)[0]
+        return database.query_most_common(self._identity_field_name, n=1)[0]
 
-    def filter(self, image_ids: List[str]) -> List[str]:
+    def filter(self, database: Database, image_ids: List[str]) -> List[str]:
         """
         Filters out images that do not have the most common identity.
         """
+        most_common_identity = self._find_most_common_identity(database)
         filtered_image_ids = []
         for image_id in image_ids:
-            image_data = self._database.find_image(image_id)
+            image_data = database.find_image(image_id)
             if (
                 self._identity_field_name in image_data
-                and image_data[self._identity_field_name] == self._most_common_identity
+                and image_data[self._identity_field_name] == most_common_identity
             ):
                 filtered_image_ids.append(image_id)
         return filtered_image_ids

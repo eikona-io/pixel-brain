@@ -76,7 +76,7 @@ class PipelineModule(DataProcessor):
         self._processed_called = True
 
     @abstractmethod
-    def _process(self, image_ids: List[str], processed_image_batch: Union[torch.Tensor, List[torch.Tensor]]):
+    def _process(self, image_ids: List[str], processed_image_batch: Union[torch.Tensor, List[torch.Tensor], List[str]]):
         """
         Abstract method to be implemented by subclasses for processing data.
         

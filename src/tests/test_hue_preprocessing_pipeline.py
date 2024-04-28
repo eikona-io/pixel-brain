@@ -21,11 +21,9 @@ def test_hue_preprocessing_pipeline():
             dataloader = DataLoader(MOCK_HUE_DATA_PATH, local_temp_database)
             local_results_dir = join(tempdir, "hue_pipeline")
             upload_prefix = f"user_photos/{TEST_USER_ID}/processed"
-            processed_photos_dir = join(
-                tempdir, upload_prefix
-            )
+            processed_photos_dir = join(tempdir, upload_prefix)
             makedirs(processed_photos_dir, exist_ok=True)
-            h = HueProcessingPipeline(local_results_dir, dataloader, upload_prefix)
+            h = HueProcessingPipeline(local_results_dir, dataloader, local_temp_database, upload_prefix)
             h.process()
 
             processed_files = [
@@ -38,6 +36,3 @@ def test_hue_preprocessing_pipeline():
                 "blond2_face0",
                 "blond3_face0",
             }  # The main identity is the blond with 3 images
-
-
-test_hue_preprocessing_pipeline()
