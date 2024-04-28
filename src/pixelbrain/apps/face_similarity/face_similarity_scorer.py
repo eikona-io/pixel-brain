@@ -81,5 +81,4 @@ class FaceSimilartyScorer:
         if self._database_created:
             self._database.delete_db()
         
-        result_field_to_retrieve = 'cloudinary_public_id' if self._source_type == 'cloudinary' else 'image_path'
-        return [result[result_field_to_retrieve] for result in results_meta]
+        return [result['_id'] for result in results_meta]
