@@ -78,7 +78,7 @@ class CloudinaryDataLoader(DataLoader):
         Loads image from local or cloud
         """
         response = requests.get(image_path)
-        img_pil = Image.open(BytesIO(response.content))
+        img_pil = Image.open(BytesIO(response.content)).convert('RGB')
         transform = transforms.Compose([ 
                                 transforms.PILToTensor() 
                                 ])
