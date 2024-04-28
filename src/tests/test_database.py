@@ -11,7 +11,7 @@ from tests.test_utils import profile_callstack
 
 
 def store_field_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, database_id='store_field_test')
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         db.add_image('test_id', 'test_image_path')
         db.store_field('test_id', 'test_field', 'test_value')
@@ -25,7 +25,7 @@ def test_store_field_remote():
     store_field_run(MONGODB_ATLAS_KEY)
 
 def store_field_error_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, database_id='store_field_error_test')
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         with pytest.raises(ValueError):
             db.store_field('non_existent_id', 'test_field', 'test_value')
@@ -37,7 +37,7 @@ def test_store_field_error_remote():
     store_field_error_run(MONGODB_ATLAS_KEY)
 
 def find_image_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, database_id='find_image_test')
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         db.add_image('test_id', 'test_image_path')
         db.store_field('test_id', 'test_field', 'test_value')
@@ -51,7 +51,7 @@ def test_find_image_remote():
     find_image_run(MONGODB_ATLAS_KEY)
 
 def find_image_error_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, database_id='find_image_error_test')
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         assert db.find_image("non_existent_id") is None
 
@@ -134,7 +134,7 @@ def test_get_field_remote():
     get_field_run(MONGODB_ATLAS_KEY, PINECONE_KEY)
 
 def find_images_run(mongo_key=None):
-    db = Database(mongo_key=mongo_key, database_id='find_images_test')
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         db.add_image('test_id', 'test_image_path')
         db.store_field('test_id', 'test_field', 'test_value')
@@ -166,7 +166,7 @@ def test_find_images_remote():
     
 def test_create_database_from_csv(mongo_key=None):
     # Create a new database
-    db = Database(database_id='create_db_from_csv_test', mongo_key=mongo_key)
+    db = Database(database_id=uuid4().hex, mongo_key=mongo_key)
     with DeleteDatabaseAfterTest(db):
         # Add images and fields to the database
         db.add_image('image1', 'path1') 
@@ -177,7 +177,7 @@ def test_create_database_from_csv(mongo_key=None):
         with tempfile.TemporaryDirectory() as tempdir:
             db.export_to_csv(f'{tempdir}/test.csv')
             # Create a new database from the CSV file
-            new_db = Database.create_from_csv(f'{tempdir}/test.csv', database_id='new_db')
+            new_db = Database.create_from_csv(f'{tempdir}/test.csv', database_id=uuid4().hex)
             with DeleteDatabaseAfterTest(new_db):
                 # Compare the images and fields in the two databases
                 assert new_db.get_all_images() == db.get_all_images()
@@ -196,7 +196,7 @@ def test_create_database_from_csv_remote():
 
 def filter_method_run(mongo_key=None):
     # Create a new database
-    db = Database(database_id='test_db', mongo_key=mongo_key)
+    db = Database(database_id=uuid4().hex, mongo_key=mongo_key)
     with DeleteDatabaseAfterTest(db):
         # Add images and fields to the database
         db.add_image('image1', 'path1')
@@ -227,7 +227,7 @@ def test_filter_method_remote():
 
 def test_filter_unidentified_people():
     # Create a new database
-    db = Database(database_id='unident_test_db')
+    db = Database(database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
         # Add images and fields to the database
         db.add_image('image1', 'path1')
@@ -245,7 +245,7 @@ def test_filter_unidentified_people():
 
 def clone_row_method_run(mongo_key=None):
     # Create a new database
-    db = Database(database_id='test_db', mongo_key=mongo_key)
+    db = Database(database_id=uuid4().hex, mongo_key=mongo_key)
     with DeleteDatabaseAfterTest(db):
         # Add images and fields to the database
         db.add_image('image1', 'path1')
@@ -264,7 +264,7 @@ def test_clone_row_method_remote():
 
 def test_query_most_common():
     # Setup a mock database with a few images having different field values
-    mock_db = Database(database_id="test_query_most_common_db")
+    mock_db = Database(database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(mock_db):
         mock_db.add_image("img1", "path/to/img1")
         mock_db.store_field("img1", "category", "nature")

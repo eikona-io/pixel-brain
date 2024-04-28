@@ -87,6 +87,7 @@ class DataLoader:
         return self
 
     def __len__(self):
+        self._lazy_load_image_paths_if_needed()
         return int(math.ceil(len(self._image_paths) / self._batch_size))
 
     def _load_image(self, image_path):
