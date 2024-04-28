@@ -261,3 +261,27 @@ def test_clone_row_method_local():
 
 def test_clone_row_method_remote():
     clone_row_method_run(MONGODB_ATLAS_KEY)
+
+def test_query_most_common():
+    # Setup a mock database with a few images having different field values
+    mock_db = Database(database_id="test_query_most_common_db")
+    with DeleteDatabaseAfterTest(mock_db):
+        mock_db.add_image("img1", "path/to/img1")
+        mock_db.store_field("img1", "category", "nature")
+        mock_db.add_image("img2", "path/to/img2")
+        mock_db.store_field("img2", "category", "nature")
+        mock_db.add_image("img3", "path/to/img3")
+        mock_db.store_field("img3", "category", "urban")
+        mock_db.add_image("img4", "path/to/img4")
+        mock_db.store_field("img4", "category", "urban")
+        mock_db.add_image("img5", "path/to/img5")
+        mock_db.store_field("img5", "category", "urban")
+
+        # Test the query_most_common method
+        most_common_categories = mock_db.query_most_common("category", 2)
+        assert len(most_common_categories) == 2, "Should return two categories"
+        assert "urban" in most_common_categories, "Urban should be a most common category"
+        assert "nature" in most_common_categories, "Nature should be a most common category"
+        most_common_categories = mock_db.query_most_common("category", 1)
+        assert len(most_common_categories) == 1, "Should return one category"
+        assert "urban" in most_common_categories, "Urban should be a most common category"
