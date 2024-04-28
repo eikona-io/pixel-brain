@@ -1,7 +1,7 @@
 boto3==1.28.84
 chromadb==0.4.17
 cloudinary==1.38.0
-deepface==0.0.89
+deepface
 huggingface-hub==0.20.3
 montydb==2.5.2
 opencv-python==4.8.1.78
@@ -15,5 +15,4 @@ torch==2.1.0
 torchvision==0.16.0
 tqdm==4.66.2
 transformers==4.40.1
-tf_keras==2.16.0
 pytest-xdist==3.5.0
