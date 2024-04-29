@@ -11,6 +11,7 @@ import math
 from tqdm import tqdm
 from pinecone import Pinecone, Index
 import pandas as pd
+from uuid import uuid4
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
 
@@ -19,14 +20,23 @@ class Database:
     """
     This class is used to interact with the MongoDB database.
     """
-    def __init__(self, database_id: str = 'db', mongo_key: str = None, pinecone_vector_key: str = None):
+
+    def __init__(
+        self,
+        database_id: str = None,
+        mongo_key: str = None,
+        pinecone_vector_key: str = None,
+    ):
         """
         Initialize the Database class.
 
+        :param: database_id: The ID of the database to connect to. defaults to a random UUID
         :param mongo_key: The MongoDB connection string. if not provided will use local mongo.
         :param pinecone_vector_key: The pinecone connection string for vector database. if not provided will use local chromadb
         :param database_id: The ID of the database to connect to.
         """
+        if not database_id:
+            database_id = uuid4().hex[:8]
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
             self._local_montydb_path = None
@@ -34,14 +44,18 @@ class Database:
             # runs an bson(binary-json) mongo compatible client
             # TODO: omerh -> change to in-memory storage, but currently there is a bug in pytest when doing so
             self._local_montydb_path = f"{os.getcwd()}/monty/{database_id}"
-            self._db = MontyClient(f"montydb:///{self._local_montydb_path}")[database_id]
+            self._db = MontyClient(f"montydb:///{self._local_montydb_path}")[
+                database_id
+            ]
         if pinecone_vector_key:
             # TODO: omerh -> change to creating a new index once we move out of free version
             self._vector_db = Pinecone(pinecone_vector_key).Index(database_id)
         else:
             self._local_vector_db_path = f"{os.getcwd()}/chroma/{database_id}"
             chroma_settings = Settings(anonymized_telemetry=False)
-            self._vector_db = chromadb.PersistentClient(self._local_vector_db_path, settings=chroma_settings)
+            self._vector_db = chromadb.PersistentClient(
+                self._local_vector_db_path, settings=chroma_settings
+            )
         self._db_id = database_id
 
     def add_image(self, image_id: str, image_path: str):
@@ -50,13 +64,17 @@ class Database:
         :param image_id (str): image unique identifier
         :param image_path (str): image path (can be remote storage)
         """
-        if self._db.images.find_one({'_id': image_id}):
+        if self._db.images.find_one({"_id": image_id}):
             # already have this image
             return
 
-        _ = self._db.images.update_one({'_id': image_id}, {'$set': {"image_path": image_path}}, upsert=True)
+        _ = self._db.images.update_one(
+            {"_id": image_id}, {"$set": {"image_path": image_path}}, upsert=True
+        )
 
-    def store_field(self, image_id: str, field_name: str, field_value: str or np.ndarray):
+    def store_field(
+        self, image_id: str, field_name: str, field_value: str or np.ndarray
+    ):
         """
         Store a field in the database.
 
@@ -64,7 +82,7 @@ class Database:
         :param field_name: The name of the field to store.
         :param field_value: The value of the field to store.
         """
-        if not self._db.images.find_one({'_id': image_id}):
+        if not self._db.images.find_one({"_id": image_id}):
             raise ValueError(f"Image ID {image_id} does not exist in the database")
 
         if isinstance(field_value, np.ndarray):
@@ -73,23 +91,32 @@ class Database:
             _ = self._store_vector(image_id, field_name, field_value)
 
         else:
-            _ = self._db.images.update_one({'_id': image_id}, {'$set': {field_name: field_value}}, upsert=True)
+            _ = self._db.images.update_one(
+                {"_id": image_id}, {"$set": {field_name: field_value}}, upsert=True
+            )
 
-    def _store_vector(self, image_id : str, field_name: str, embedding: np.ndarray):
+    def _store_vector(self, image_id: str, field_name: str, embedding: np.ndarray):
         index_fqn = f"{self._db_id}-{field_name}"
         if isinstance(self._vector_db, Index):
-            vec = {
-                "id": image_id,
-                "values": embedding.tolist()
-            }
+            vec = {"id": image_id, "values": embedding.tolist()}
             _ = self._vector_db.upsert(vectors=[vec], namespace=index_fqn)
-            _ = self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:pinecone/{self._db_id}")
+            _ = self.store_field(
+                image_id, field_name, f"{IN_VECTOR_STORE_STR}:pinecone/{self._db_id}"
+            )
         else:
-            index = self._vector_db.get_or_create_collection(index_fqn, embedding_function=None)
+            index = self._vector_db.get_or_create_collection(
+                index_fqn, embedding_function=None
+            )
             _ = index.upsert(image_id, embedding.tolist())
-            _ = self.store_field(image_id, field_name, f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}")
+            _ = self.store_field(
+                image_id,
+                field_name,
+                f"{IN_VECTOR_STORE_STR}:{self._local_vector_db_path}",
+            )
 
-    def query_vector_field(self, field_name: str, query: np.ndarray, n_results=1) -> Tuple[List[dict], List[float]]:
+    def query_vector_field(
+        self, field_name: str, query: np.ndarray, n_results=1
+    ) -> Tuple[List[dict], List[float]]:
         """
         Query the relevant vector index for n_results closest images
         and return closest results metadata and distance metric
@@ -105,23 +132,24 @@ class Database:
     def _query_vector(self, index_fqn: str, query: np.ndarray, n_results):
         if isinstance(self._vector_db, Index):
             try:
-                results = self._vector_db.query(vector=query.tolist(), namespace=index_fqn, top_k=n_results)
+                results = self._vector_db.query(
+                    vector=query.tolist(), namespace=index_fqn, top_k=n_results
+                )
             except ValueError as err:
                 raise RuntimeError(f"Cant find {index_fqn} in vector database")
-            results_meta = [self.find_image(match['id']) for match in results['matches']]
-            results_dists = [match['score'] for match in results['matches']]
+            results_meta = [
+                self.find_image(match["id"]) for match in results["matches"]
+            ]
+            results_dists = [match["score"] for match in results["matches"]]
             return results_meta, results_dists
         else:
             try:
                 index = self._vector_db.get_collection(index_fqn)
             except ValueError as err:
                 raise RuntimeError(f"Cant find {index_fqn} in vector database")
-            results = index.query(
-                query.tolist(),
-                n_results=n_results
-            )
-            results_meta = [self.find_image(image_id) for image_id in results['ids'][0]]
-            results_dists = results['distances'][0]
+            results = index.query(query.tolist(), n_results=n_results)
+            results_meta = [self.find_image(image_id) for image_id in results["ids"][0]]
+            results_dists = results["distances"][0]
             return results_meta, results_dists
 
     def find_image(self, image_id: str) -> dict:
@@ -131,7 +159,7 @@ class Database:
         :param image_id: The ID of the image to find.
         :return: The image document.
         """
-        return self._db.images.find_one({'_id': image_id})
+        return self._db.images.find_one({"_id": image_id})
 
     def get_all_images(self) -> list:
         """
@@ -149,7 +177,6 @@ class Database:
             _ = shutil.rmtree(self._local_vector_db_path, ignore_errors=True)
         if self._local_montydb_path:
             _ = shutil.rmtree(self._local_montydb_path, ignore_errors=True)
-            
 
     def get_field(self, image_id: str, field_name: str):
         """
@@ -171,27 +198,31 @@ class Database:
             if isinstance(self._vector_db, Index):
                 result = self._vector_db.fetch(ids=[image_id], namespace=index_fqn)
                 if result:
-                    result_id = list(result['vectors'].keys())
+                    result_id = list(result["vectors"].keys())
                     if len(result_id) > 1:
                         raise ValueError(f"Found more than 1 vector with id {image_id}")
                     elif len(result_id) == 0:
                         raise ValueError(f"No vector found with id {image_id}")
-                    field_value = result['vectors'][result_id[0]]['values']
+                    field_value = result["vectors"][result_id[0]]["values"]
                 else:
                     raise ValueError(f"Vector for {image_id} not found in {index_fqn}")
             else:
                 try:
                     index = self._vector_db.get_collection(index_fqn)
                 except ValueError as err:
-                    raise RuntimeError(f"Cant find {index_fqn} in vector database, maybe it did not persist?")
+                    raise RuntimeError(
+                        f"Cant find {index_fqn} in vector database, maybe it did not persist?"
+                    )
 
-                field_value = index.get(image_id, include=["embeddings"])['embeddings']
+                field_value = index.get(image_id, include=["embeddings"])["embeddings"]
                 assert len(field_value) == 1
                 field_value = field_value[0]
             field_value = np.array(field_value)
         return field_value
 
-    def find_images_with_value(self, field_name: str, value=None, sort_by=None, ascending=True):
+    def find_images_with_value(
+        self, field_name: str, value=None, sort_by=None, ascending=True
+    ):
         """
         Find all images in the database that have a specific field value, with an optional sorting.
 
@@ -201,14 +232,18 @@ class Database:
         :param ascending: Determines the sorting order. True for ascending, False for descending.
         :return: A list of all image documents that match the field value, optionally sorted.
         """
-        query = {field_name: {"$exists": True}} if value is None else {field_name: value}
+        query = (
+            {field_name: {"$exists": True}} if value is None else {field_name: value}
+        )
         sort_order = ASCENDING if ascending else DESCENDING
         if sort_by:
             return list(self._db.images.find(query).sort(sort_by, sort_order))
         else:
             return list(self._db.images.find(query))
 
-    def aggregate_on_field(self, field_name: str, sort_order: int = -1) -> List[Dict[str, Any]]:
+    def aggregate_on_field(
+        self, field_name: str, sort_order: int = -1
+    ) -> List[Dict[str, Any]]:
         """
         Aggregate ids by a given field to a list, and sort by count if required.
         :param field_name: The field name to aggregate
@@ -218,10 +253,14 @@ class Database:
         # This is a workaround for the fact that montydb does not support aggregation pipeline
         df = pd.DataFrame(self.get_all_images())
         df = df[df[field_name].notna()]
-        df_agg = df.groupby(field_name).agg(count=(field_name, 'size'), _id_list=('_id', lambda x: list(x)))
+        df_agg = df.groupby(field_name).agg(
+            count=(field_name, "size"), _id_list=("_id", lambda x: list(x))
+        )
         if sort_order != 0:
-            df_agg = df_agg.sort_values('count', ascending=(True if sort_order == 1 else False))
-        return df_agg.to_dict('records')
+            df_agg = df_agg.sort_values(
+                "count", ascending=(True if sort_order == 1 else False)
+            )
+        return df_agg.to_dict("records")
 
     def query_most_common(self, field_name: str, n: int = 1) -> List[dict]:
         """
@@ -243,9 +282,13 @@ class Database:
         df = pd.DataFrame(self.get_all_images())
         _ = df.to_csv(file_path, index=False)
 
-
     @staticmethod
-    def create_from_csv(csv_file_path: str, database_id: str = 'db', mongo_key: str = None, mongo_vector_key: str = None):
+    def create_from_csv(
+        csv_file_path: str,
+        database_id: str = "db",
+        mongo_key: str = None,
+        mongo_vector_key: str = None,
+    ):
         """
         Create a new database from a CSV file.
         :param csv_file_path: The path of the CSV file to import.
@@ -256,11 +299,11 @@ class Database:
         db = Database(database_id, mongo_key, mongo_vector_key)
         df = pd.read_csv(csv_file_path)
         for _, row in tqdm(df.iterrows(), desc="Reading CSV file", total=len(df)):
-            image_id = row['_id']
-            image_path = row['image_path']
+            image_id = row["_id"]
+            image_path = row["image_path"]
             _ = db.add_image(image_id, image_path)
             for field_name, field_value in row.items():
-                if field_name not in ['_id', 'image_path']:
+                if field_name not in ["_id", "image_path"]:
                     if isinstance(field_value, float) and math.isnan(field_value):
                         # nan's are auto generated for empty values in numpy
                         continue
@@ -280,8 +323,17 @@ class Database:
         else:
             _ = self._db.images.delete_many({field_name: {"$ne": field_value}})
 
-    def filter_unidentified_people(self, is_person_field: str = 'is_person', identity_field: str = 'assigned_identity'):
-        _ = self._db.images.delete_many({is_person_field: {"$in": ["True", True]}, identity_field: {"$exists": False}})
+    def filter_unidentified_people(
+        self,
+        is_person_field: str = "is_person",
+        identity_field: str = "assigned_identity",
+    ):
+        _ = self._db.images.delete_many(
+            {
+                is_person_field: {"$in": ["True", True]},
+                identity_field: {"$exists": False},
+            }
+        )
 
     def clone_row(self, source_image_id: str, target_image_id: str):
         """
@@ -292,14 +344,18 @@ class Database:
         """
         source_image = self.find_image(source_image_id)
         if source_image is None:
-            raise ValueError(f"Source image ID {source_image_id} does not exist in the database")
+            raise ValueError(
+                f"Source image ID {source_image_id} does not exist in the database"
+            )
 
         target_image = self.find_image(target_image_id)
         if target_image is None:
-            raise ValueError(f"Target image ID {target_image_id} does not exist in the database")
+            raise ValueError(
+                f"Target image ID {target_image_id} does not exist in the database"
+            )
 
         for field_name, field_value in source_image.items():
-            if field_name not in ['_id', 'image_path']:
+            if field_name not in ["_id", "image_path"]:
                 _ = self.store_field(target_image_id, field_name, field_value)
 
     def does_image_have_field(self, image_id: str, field_name: str) -> bool:

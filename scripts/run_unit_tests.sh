@@ -39,7 +39,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [[ "$include_slow_suit" == "1" ]]; then
-  pytest $PIXELBRAIN_PATH/src/tests -n 4 $time_tests
+  pytest $PIXELBRAIN_PATH/src/tests -n auto $time_tests
 else
   pytest $PIXELBRAIN_PATH/src/tests -m "not slow_suit" -n 4 $time_tests
 fi
