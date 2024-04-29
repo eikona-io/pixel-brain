@@ -47,5 +47,3 @@ def test_face_similarity_scorer_with_cloudinary_source():
     assert (
         results[0] == expected_first_result
     ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
-
-test_face_similarity_scorer_with_cloudinary_source()

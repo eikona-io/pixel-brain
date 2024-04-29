@@ -29,6 +29,8 @@ class FaceSimilarityPipeline(TaggingPipeline):
         score_field_name: str = "face_similarity_score",
         n_closest_compare_to_to_consider: int = 40,
         k_nearest: int = 5,
+        tested_embedding_field_name: str = f"face_embedding_tested_{uuid4().hex[:16]}",
+        compare_to_embedding_field_name: str = f"face_embedding_compare_to_{uuid4().hex[:16]}",
     ):
         """
         Initializes the FaceMatcherPipeline with the necessary data loaders, database, and scoring strategy.
@@ -41,11 +43,8 @@ class FaceSimilarityPipeline(TaggingPipeline):
         """
         super().__init__(None, database)
 
-        # generate unique field names so we would not compare to vectors generated from another session
-        self._tested_embedding_field_name = f"face_embedding_tested_{uuid4().hex[:16]}"
-        self._compare_to_embedding_field_name = (
-            f"face_embedding_compare_to_{uuid4().hex[:16]}"
-        )
+        self._tested_embedding_field_name = tested_embedding_field_name
+        self._compare_to_embedding_field_name = compare_to_embedding_field_name
         self._data_processors = [
             FacenetEmbbedderModule(
                 tested_dataloader,

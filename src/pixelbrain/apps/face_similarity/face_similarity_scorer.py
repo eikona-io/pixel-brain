@@ -58,6 +58,9 @@ class FaceSimilartyScorer:
         self._source_type = source_type
 
         self._database = database
+        # generate unique field names so we would not compare to vectors generated from another session
+        self._tested_embedding_field_name = f"face_embedding_tested_{uuid4().hex[:16]}"
+        self._compare_to_embedding_field_name = f"face_embedding_compare_to_{uuid4().hex[:16]}"
         self._matcher = FaceSimilarityPipeline(
             self._tested_dataloader,
             self._compare_to_dataloader,
@@ -65,7 +68,9 @@ class FaceSimilartyScorer:
             scoring_strategy=scoring_strategy,
             score_field_name=score_field_name,
             n_closest_compare_to_to_consider=n_closest_compare_to_to_consider,
-            k_nearest=k_nearest
+            k_nearest=k_nearest,
+            tested_embedding_field_name=self._tested_embedding_field_name,
+            compare_to_embedding_field_name=self._compare_to_embedding_field_name
         )
         self._scoring_field_name = score_field_name
         self._logger = get_logger("CloudinaryFaceSimilartyScorer")
@@ -74,7 +79,7 @@ class FaceSimilartyScorer:
         """Processes the images to match faces using the configured pipeline."""
         self._matcher.process()
         results_meta = self._database.find_images_with_value(
-            self._scoring_field_name,
+            self._tested_embedding_field_name,
             value=None,
             sort_by=self._scoring_field_name,
             ascending=True,
