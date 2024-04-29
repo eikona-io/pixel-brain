@@ -36,7 +36,7 @@ class Database:
         :param database_id: The ID of the database to connect to.
         """
         if not database_id:
-            database_id = str(uuid4())
+            database_id = uuid4().hex[:8]
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
             self._local_montydb_path = None

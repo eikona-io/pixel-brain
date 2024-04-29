@@ -42,9 +42,9 @@ class FaceSimilarityPipeline(TaggingPipeline):
         super().__init__(None, database)
 
         # generate unique field names so we would not compare to vectors generated from another session
-        self._tested_embedding_field_name = f"face_embedding_tested_{str(uuid4())}"
+        self._tested_embedding_field_name = f"face_embedding_tested_{uuid4().hex[:16]}"
         self._compare_to_embedding_field_name = (
-            f"face_embedding_compare_to_{str(uuid4())}"
+            f"face_embedding_compare_to_{uuid4().hex[:16]}"
         )
         self._data_processors = [
             FacenetEmbbedderModule(

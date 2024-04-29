@@ -36,7 +36,7 @@ class FaceSimilartyScorer:
     ):
         self._database_created = False
         if not database:
-            database = Database(str(uuid4()))
+            database = Database()
             self._database_created = True
 
         if source_type == 'cloudinary':
