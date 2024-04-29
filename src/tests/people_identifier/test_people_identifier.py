@@ -27,8 +27,13 @@ def people_identifier_module_run(strategy, data_path, nof_images_per_subject):
         facenet_embedder.process()
 
         # Create an instance of PeopleIdentifierModule with pairwise strategy and process the data
+        if strategy == 'pairwise':
+            algo_kwargs = {distance_threshold:290, exclude_group:None}
+        else:
+            algo_kwargs = {}
+        
         people_identifier = PeopleIdentifierModule(
-            data2, database, "face_embedding", strategy=strategy
+            data2, database, "face_embedding", strategy=strategy, **algo_kwargs
         )
         people_identifier.process()
 

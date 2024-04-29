@@ -13,19 +13,14 @@ class PeopleIdentifierModule(PipelineModule):
     """
     Module for identifying people in images.
     """
-
-    def __init__(
-        self,
-        data: DataLoader,
-        database: Database,
-        vector_field_name: str,
-        identity_field_name: str = "identity",
-        strategy: str = "hdbscan",
-        distance_threshold: int = 290,
-        pairwise_exclude_group: str = None,
-        filters: Dict[str, str] = None,
-        eps: float = 0.1,
-    ):
+    def __init__(self, 
+                 data: DataLoader,
+                 database: Database,
+                 vector_field_name: str,
+                 identity_field_name: str = 'identity',
+                 strategy: str = 'hdbscan',
+                 filters: Dict[str, str] = None,
+                 **algo_params):
         """
         Initialize the PeopleIdentifierModule.
 
@@ -34,24 +29,14 @@ class PeopleIdentifierModule(PipelineModule):
         :param vector_field_name: Name of the field in the database where the vector is stored
         :param identity_field_name: Name of the field in the database where to store the identity
         :param strategy: Strategy for identifying people, either 'pairwise' or 'hdbscan'
-        :param distance_threshold: Threshold for the distance between vectors for identification, relevant only in 'pairwise' strategy
-        :param pairwise_exclude_group: Group field to exclude images in pairwise identification, relevant only in 'pairwise' strategy
-        :param eps: Epsilon for the HDBSCAN clustering, relevant only in 'hdbscan' strategy, should be modified with care
+        :param algo_params: Additional parameters for the strategy. For HDBSCAN primarly min_samples and min_cluster_size, for pairwise exclude_group and distance_threshold (290).
         """
         super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name
-        if strategy == "pairwise":
-            self._identify_strategy = PairwiseIdentifyingStrategy(
-                database,
-                vector_field_name,
-                identity_field_name,
-                distance_threshold,
-                pairwise_exclude_group,
-            )
-        elif strategy == "hdbscan":
-            self._identify_strategy = HDBSCANIdentifyingStrategy(
-                database, identity_field_name, eps=eps
-            )
+        if strategy == 'pairwise':
+            self._identify_strategy = PairwiseIdentifyingStrategy(database, vector_field_name, identity_field_name, **algo_params)
+        elif strategy == 'hdbscan':
+            self._identify_strategy = HDBSCANIdentifyingStrategy(database, identity_field_name, **algo_params)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 

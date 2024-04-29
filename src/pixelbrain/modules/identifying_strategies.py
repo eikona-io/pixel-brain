@@ -137,22 +137,25 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         self,
         database: Database,
         identity_field_name: str,
-        min_group_size: int = 2,
-        eps: float = 0.1,
+        min_samples: int = 5,
+        min_cluster_size: int = 5,
     ):
         """
         Initialize the HDBSCANIdentifyingStrategy.
-
+        For more see:
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.HDBSCAN.html
+        https://scikit-learn.org/stable/modules/clustering.html#hdbscan
         :param database: The database object.
         :param identity_field_name: The name of the identity field.
-        :param min_group_size: The minimum group size for HDBSCAN clustering.
+        :param min_samples: The minimal ammount of samples to be considered a core point.
+        :param min_cluster_size: The minimal ammount of edges to be considered a connected componnent upon heirarchical clustering. Usually should be the same as min_samples.
         """
         self._database = database
         self._identity_field_name = identity_field_name
-        self._min_group_size = min_group_size
+        self._min_samples = min_samples
+        self._min_cluster_size = min_cluster_size
         self._vectors = []
         self._image_ids = []
-        self._eps = eps
 
     def process(self, image_ids: List[str], image_vecs: List[np.ndarray]):
         """
@@ -175,7 +178,7 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
 
         # Apply HDBSCAN clustering
         hdbscan = HDBSCAN(
-            min_cluster_size=self._min_group_size, allow_single_cluster=True, cluster_selection_epsilon=self._eps
+            min_cluster_size=self._min_cluster_size, min_samples=self._min_samples, allow_single_cluster=True
         )
         labels = hdbscan.fit_predict(stacked_vectors)
         if all(label == -1 for label in labels):
