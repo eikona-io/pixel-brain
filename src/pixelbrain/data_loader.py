@@ -6,7 +6,7 @@ import os
 import boto3
 import glob
 import random
-from torchvision.io import read_image, read_file
+from torchvision.io import read_image, read_file, ImageReadMode
 from abc import ABC, abstractmethod
 import math
 
@@ -152,7 +152,7 @@ class DataLoader:
         self._batch_size = batch_size
 
     def _read_image(self, image_path):
-        return read_image(image_path) if self._decode_images else read_file(image_path)
+        return read_image(image_path, ImageReadMode.RGB) if self._decode_images else read_file(image_path)
 
     def _get_image_from_path(self, image_path: str) -> str:
         image_fullpath = os.path.realpath(image_path)
