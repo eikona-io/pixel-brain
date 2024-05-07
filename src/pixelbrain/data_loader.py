@@ -82,6 +82,8 @@ class DataLoader:
     def _lazy_load_image_paths_if_needed(self):
         if self._image_paths is None:
             self._image_paths = self._get_all_image_paths()
+            if not self._image_paths:
+                raise ValueError(f"No images found in {self._images_path}")
 
     def __iter__(self):
         return self
