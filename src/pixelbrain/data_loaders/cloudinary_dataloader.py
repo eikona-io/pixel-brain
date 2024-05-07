@@ -7,11 +7,10 @@ from overrides import overrides
 from pixelbrain.utils import get_logger
 import cloudinary, cloudinary.api
 import requests
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 import os
 from os import environ
-import numpy as np
 import torch
 
 
@@ -79,6 +78,7 @@ class CloudinaryDataLoader(DataLoader):
         """
         response = requests.get(image_path)
         img_pil = Image.open(BytesIO(response.content)).convert('RGB')
+        img_pil = ImageOps.exif_transpose(img_pil)
         transform = transforms.Compose([ 
                                 transforms.PILToTensor() 
                                 ])
