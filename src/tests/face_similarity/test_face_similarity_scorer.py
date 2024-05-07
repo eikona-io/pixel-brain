@@ -28,7 +28,7 @@ def test_face_similarity_scorer():
 
 @pytest.mark.slow_suit
 def test_face_similarity_scorer_with_cloudinary_source():
-    compare_to_dir = "user_photos/test_score_id"
+    compare_to_dir = "user_photos/test_score_id/raw"
     source_dir = (
         "user_images/generated_images/demo/6e90b780-4be7-4504-8f73-966e0dbcd44c"
     )

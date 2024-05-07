@@ -32,6 +32,7 @@ class FaceExtractorModule(PipelineModule):
         clone_original_image_metadata=True,
         increase_face_ratio: float = 2.5,
         store_in_db: bool = True,
+        minimal_face_size: int = 200 * 240,
     ):
         """
         Initialize the FaceExtractorModule.
@@ -52,6 +53,7 @@ class FaceExtractorModule(PipelineModule):
         self._clone_metadata = clone_original_image_metadata
         self._increase_face_ratio = increase_face_ratio
         self._store_in_db = store_in_db
+        self._minimal_face_size = minimal_face_size
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
@@ -87,6 +89,11 @@ class FaceExtractorModule(PipelineModule):
                 face_frame = self._get_face_frame(
                     masked_image, detected_face, ratio=self._increase_face_ratio
                 )
+                if (face_frame.shape[0] * face_frame.shape[1]) < self._minimal_face_size:
+                    logger.info(
+                        f"Face in image {image_id} is too small to extract. Skipping."
+                    )
+                    continue
                 face_image_path = self._save_image(face_frame, image_id, idx)
 
                 # add to db
