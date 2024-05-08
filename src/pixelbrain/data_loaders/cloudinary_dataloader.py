@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from typing import List, Optional, Tuple
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
-from overrides import overrides 
+from overrides import overrides
 from pixelbrain.utils import get_logger
 import cloudinary, cloudinary.api
 import requests
@@ -12,7 +12,7 @@ from io import BytesIO
 import os
 from os import environ
 import torch
-
+from typing import List, Union
 
 MAX_RESULTS = 1000
 
@@ -22,14 +22,36 @@ class CloudinaryDataLoader(DataLoader):
     This class is a custom dataloader for loading images from Cloudinary
     Note - The cloudinary connection depends on the credentials being set as environment variables in the format:
     CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+
+    :param cloudinary_folder_prefix_or_public_ids: The folder prefix or list of public ids to load from Cloudinary
+    :param database: The database to add the images to
+    :param batch_size: The batch size to load the images in
+    :param is_recursive: Whether to load all images in the folder or not
     """
-    def __init__(self, cloudinary_folder_prefix, database: Database, batch_size: int = 1, is_recursive: bool = False):
-        super().__init__(images_path=cloudinary_folder_prefix, database=database, batch_size=batch_size, 
-                         decode_images=True, load_images=True, is_recursive=is_recursive)
+
+    def __init__(
+        self,
+        cloudinary_folder_prefix_or_public_ids: Union[str, List[str]],
+        database: Database,
+        batch_size: int = 1,
+        is_recursive: bool = False,
+    ):
+        super().__init__(
+            images_path=cloudinary_folder_prefix_or_public_ids,
+            database=database,
+            batch_size=batch_size,
+            decode_images=True,
+            load_images=True,
+            is_recursive=is_recursive,
+        )
         self._logger = get_logger("CloudinaryDataLoader")
-        if not environ.get('CLOUDINARY_URL'):
-            self._logger.error("Cloudinary credentials not found. Please set them as environment variables.")
-            raise ValueError("Cloudinary credentials not found. Please set them as environment variables.")
+        if not environ.get("CLOUDINARY_URL"):
+            self._logger.error(
+                "Cloudinary credentials not found. Please set them as environment variables."
+            )
+            raise ValueError(
+                "Cloudinary credentials not found. Please set them as environment variables."
+            )
         self.test_cloudinary_connection()
 
     @overrides
@@ -61,13 +83,22 @@ class CloudinaryDataLoader(DataLoader):
         """
         Gets all the images public ids from the prefix provided
         """
-        raw_results = cloudinary.api.resources(type = "upload", prefix = self._images_path, max_results=MAX_RESULTS)
-        resources = raw_results['resources']
+        if isinstance(self._images_path, list) and all(isinstance(item, str) for item in self._images_path):
+            # images public ids were explicitly provided upon instantiation
+            return self._images_path
+        raw_results = cloudinary.api.resources(
+            type="upload", prefix=self._images_path, max_results=MAX_RESULTS
+        )
+        resources = raw_results["resources"]
         if len(resources) == 0:
             return []
-        all_paths = [r['public_id'] for r in resources]
+        all_paths = [r["public_id"] for r in resources]
         if not self.is_recursive:
-            return [path for path in all_paths if os.path.split(path)[0] == self._images_path]
+            return [
+                path
+                for path in all_paths
+                if os.path.split(path)[0] == self._images_path
+            ]
         else:
             return all_paths
 
@@ -77,11 +108,9 @@ class CloudinaryDataLoader(DataLoader):
         Loads image from local or cloud
         """
         response = requests.get(image_path)
-        img_pil = Image.open(BytesIO(response.content)).convert('RGB')
+        img_pil = Image.open(BytesIO(response.content)).convert("RGB")
         img_pil = ImageOps.exif_transpose(img_pil)
-        transform = transforms.Compose([ 
-                                transforms.PILToTensor() 
-                                ])
+        transform = transforms.Compose([transforms.PILToTensor()])
         return transform(img_pil)
 
     def test_cloudinary_connection(self):
