@@ -68,6 +68,9 @@ class TestCloudinaryDataLoader:
     def get_loader(self):
         return CloudinaryDataLoader(self.cloudinary_folder_prefix, self.database)
 
+    def get_loader_with_public_ids(self):
+        return CloudinaryDataLoader([MOCK_PUBLIC_ID, MOCK_PUBLIC_ID], self.database, batch_size=2)
+
     def test_init(self):
         good_loader = self.get_loader()
         assert good_loader._images_path == self.cloudinary_folder_prefix
@@ -82,7 +85,13 @@ class TestCloudinaryDataLoader:
         ids_batch, image_batch = loader.__next__()
         assert ids_batch == [MOCK_PUBLIC_ID]
         assert torch.equal(image_batch[0], self.test_image)
-        torch.allclose
+
+    def test_next_with_public_ids(self):
+        loader = self.get_loader_with_public_ids()
+        ids_batch, image_batch = loader.__next__()
+        assert ids_batch == [MOCK_PUBLIC_ID, MOCK_PUBLIC_ID]
+        assert torch.equal(image_batch[0], self.test_image)
+        assert torch.equal(image_batch[1], self.test_image)
 
     def test_load_image(self):
         loader = self.get_loader()
