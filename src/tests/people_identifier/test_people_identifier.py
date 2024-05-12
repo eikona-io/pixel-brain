@@ -3,9 +3,14 @@ from pixelbrain.database import Database
 from pixelbrain.modules.embedders import FacenetEmbbedderModule
 from pixelbrain.modules.people_identifier import PeopleIdentifierModule, MostCommonIdentityFilter
 import re
+import os
+from glob import glob
+import pandas as pd
+import numpy as np
 import pytest
 from pixelbrain.utils import PIXELBRAIN_PATH
-from tests.test_utils import DeleteDatabaseAfterTest
+from tests.test_utils import DeleteDatabaseAfterTest, remove_number_suffix
+from sklearn.metrics import confusion_matrix, f1_score
 
 
 def get_identity_from_path(path):
@@ -14,19 +19,20 @@ def get_identity_from_path(path):
     return identity
 
 
-def people_identifier_module_run(strategy, data_path, nof_images_per_subject):
+def people_identifier_module_run(strategy, data_path):
     database = Database(
-        database_id=f"people_identifier_test_{strategy}_{nof_images_per_subject}"
+        database_id=f"people_identifier_test_{strategy}_{os.path.basename(data_path)}"
     )
     data = DataLoader(data_path, database)
     data2 = data.clone()
+    subject_name = os.path.basename(data_path).split('.')[0].lower()
 
     with DeleteDatabaseAfterTest(database):
         # Create an instance of FacenetEmbbedderModule and process the data
         facenet_embedder = FacenetEmbbedderModule(data, database)
         facenet_embedder.process()
 
-        # Create an instance of PeopleIdentifierModule with pairwise strategy and process the data
+        # Create an instance of PeopleIdentifierModule process the data
         people_identifier = PeopleIdentifierModule(
             data2, database, "face_embedding", strategy=strategy
         )
@@ -34,62 +40,39 @@ def people_identifier_module_run(strategy, data_path, nof_images_per_subject):
 
         # Retrieve all images from the database
         metadata = database.get_all_images()
-
-        # Check if all images have been assigned an identity
-        for image_meta in metadata:
-            assigned_identity = image_meta.get("identity", None)
-            if assigned_identity is not None:
-                same_identity_images = database.find_images_with_value(
-                    "identity", assigned_identity
-                )
-                same_identity_image_paths = [
-                    meta["image_path"] for meta in same_identity_images
-                ]
-                orig_identities = [
-                    get_identity_from_path(path) for path in same_identity_image_paths
-                ]
-                assert (
-                    len(set(orig_identities)) == 1
-                ), "Not all original identities are the same"
-                if strategy == "hdbscan":
-                    # hdbscan should find all subject photos
-                    assert (
-                        len(same_identity_images) == nof_images_per_subject
-                    ), "Not all subject photos were found (found {}, expected {})".format(
-                        len(same_identity_images), nof_images_per_subject
-                    )
+        # Create a nice df
+        df = pd.DataFrame(metadata)
+        df['_id'] = df['_id'].apply(lambda id: remove_number_suffix(os.path.basename(id).split('.')[0]))
+        df = df.drop(columns=['image_path', 'face_embedding'])
+        df.rename(columns={'_id': 'true_id', 'identity': 'assigned_id'}, inplace=True)
+        df['assigned_id'] = df['assigned_id'].fillna(-1)
+        df['assigned_id'] = df['assigned_id'].map({id: idx for idx, id in enumerate(df['assigned_id'].unique()) if id != -1})
+        df['assigned_id'] = df['assigned_id'].fillna(-1)
+        df['assigned_id'] = df['assigned_id'].apply(lambda x: int(x))
+        
+        # Compute metrics
+        most_common_assigned_id_for_target = df[df['true_id'] == subject_name]['assigned_id'].value_counts().idxmax()
+        labels = (df['true_id'] == subject_name).to_numpy()
+        predictions = (df['assigned_id'] == most_common_assigned_id_for_target).to_numpy()
+        tn, fp, fn, tp = confusion_matrix(labels, predictions).ravel()
+        f1 = f1_score(labels, predictions)
+        return f1
 
 
 @pytest.mark.slow_suit
-def test_people_identifier_module_pairwise_strategy():
-    people_identifier_module_run(
-        "pairwise",
-        f"{PIXELBRAIN_PATH}/assets/test_data/subjects",
-        nof_images_per_subject=3,
-    )
+def test_people_identifier():
+    """
+    Computes ROC scores for 5 different people with data after face extraction.
+    We measure that the ...
+    """
+    test_data_dir = os.path.join(PIXELBRAIN_PATH, "assets", "tuning_data", "people_identifier", "real_data", "after_face_extractor")
+    test_subject_dirs = glob(os.path.join(test_data_dir, '*'))
+    f1_scores = []
+    for subject_dir in test_subject_dirs:
+        f1 = people_identifier_module_run("dbscan", subject_dir)
+        f1_scores.append(f1)
+    assert np.array(f1_scores).mean() >= 0.95
 
-
-@pytest.mark.slow_suit
-def test_people_identifier_module_hdbscan_strategy_multiple_people():
-    people_identifier_module_run(
-        "hdbscan",
-        f"{PIXELBRAIN_PATH}/assets/test_data/subjects",
-        nof_images_per_subject=3,
-    )
-
-
-@pytest.mark.slow_suit
-def test_people_identifier_module_hdbscan_strategy_one_person():
-    people_identifier_module_run(
-        "hdbscan",
-        f"{PIXELBRAIN_PATH}/src/tests/people_identifier/test_identity_1",
-        nof_images_per_subject=6,  # 8 images for subject 1, in 2 we can't find a face
-    )
-    people_identifier_module_run(
-        "hdbscan",
-        f"{PIXELBRAIN_PATH}/src/tests/people_identifier/test_identity_2",
-        nof_images_per_subject=12,  # 14 images for subject 2, in 2 we can't find a face
-    )
 
 def test_most_common_identity_filter():
     # Setup a mock database with a few images having different identities

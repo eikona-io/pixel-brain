@@ -5,7 +5,7 @@ from pixelbrain.data_loader import DataLoader, DataLoaderFilter
 from pixelbrain.pipeline import PipelineModule
 from pixelbrain.modules.identifying_strategies import (
     PairwiseIdentifyingStrategy,
-    HDBSCANIdentifyingStrategy,
+    DBSCANIdentifyingStrategy,
 )
 
 
@@ -20,11 +20,11 @@ class PeopleIdentifierModule(PipelineModule):
         database: Database,
         vector_field_name: str,
         identity_field_name: str = "identity",
-        strategy: str = "hdbscan",
+        strategy: str = "dbscan",
         distance_threshold: int = 290,
         pairwise_exclude_group: str = None,
         filters: Dict[str, str] = None,
-        eps: float = 0.1,
+        eps: float = 21,
     ):
         """
         Initialize the PeopleIdentifierModule.
@@ -33,10 +33,10 @@ class PeopleIdentifierModule(PipelineModule):
         :param database: Database object
         :param vector_field_name: Name of the field in the database where the vector is stored
         :param identity_field_name: Name of the field in the database where to store the identity
-        :param strategy: Strategy for identifying people, either 'pairwise' or 'hdbscan'
+        :param strategy: Strategy for identifying people, either 'pairwise' or 'dbscan'
         :param distance_threshold: Threshold for the distance between vectors for identification, relevant only in 'pairwise' strategy
         :param pairwise_exclude_group: Group field to exclude images in pairwise identification, relevant only in 'pairwise' strategy
-        :param eps: Epsilon for the HDBSCAN clustering, relevant only in 'hdbscan' strategy, should be modified with care
+        :param eps: Epsilon for the DBSCAN clustering, relevant only in 'dbscan' strategy, should be modified with care
         """
         super().__init__(data, database, None, filters)
         self._vector_field_name = vector_field_name
@@ -48,8 +48,8 @@ class PeopleIdentifierModule(PipelineModule):
                 distance_threshold,
                 pairwise_exclude_group,
             )
-        elif strategy == "hdbscan":
-            self._identify_strategy = HDBSCANIdentifyingStrategy(
+        elif strategy == "dbscan":
+            self._identify_strategy = DBSCANIdentifyingStrategy(
                 database, identity_field_name, eps=eps
             )
         else:

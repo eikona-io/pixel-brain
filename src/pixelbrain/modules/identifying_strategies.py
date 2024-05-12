@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 from pixelbrain.database import Database
 from abc import ABC, abstractmethod
-from sklearn.cluster._hdbscan.hdbscan import HDBSCAN
+from sklearn.cluster import DBSCAN
 
 
 class IdentifyingStrategy(ABC):
@@ -125,9 +125,9 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
                 break
 
 
-class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
+class DBSCANIdentifyingStrategy(IdentifyingStrategy):
     """
-    This class implements the HDBSCAN identifying strategy.
+    This class implements the DBSCAN identifying strategy.
     This strategy is less strict than 'pairwise' and might group images with different identities to the same group.
     But, it can also handle instances with images with large distance apart.
     This strategy runtime complexity is O(nlogn) (expected) and O(n) in space - which might prohibit large datasets from fitting in memory.
@@ -137,19 +137,19 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
         self,
         database: Database,
         identity_field_name: str,
-        min_group_size: int = 2,
-        eps: float = 0.1,
+        min_samples: int = 2,
+        eps: float = 21,
     ):
         """
-        Initialize the HDBSCANIdentifyingStrategy.
+        Initialize the DBSCANIdentifyingStrategy.
 
         :param database: The database object.
         :param identity_field_name: The name of the identity field.
-        :param min_group_size: The minimum group size for HDBSCAN clustering.
+        :param min_group_size: The minimum group size for DBSCAN clustering.
         """
         self._database = database
         self._identity_field_name = identity_field_name
-        self._min_group_size = min_group_size
+        self._min_samples = min_samples
         self._vectors = []
         self._image_ids = []
         self._eps = eps
@@ -166,18 +166,18 @@ class HDBSCANIdentifyingStrategy(IdentifyingStrategy):
 
     def post_process(self):
         """
-        This method applies HDBSCAN clustering and assigns identities based on clusters.
+        This method applies DBSCAN clustering and assigns identities based on clusters.
         """
-        # Stack vectors for HDBSCAN
+        # Stack vectors for DBSCAN
         if not self._vectors:
             raise ValueError("No vectors to process")
         stacked_vectors = np.vstack(self._vectors)
 
-        # Apply HDBSCAN clustering
-        hdbscan = HDBSCAN(
-            min_cluster_size=self._min_group_size, allow_single_cluster=True, cluster_selection_epsilon=self._eps
+        # Apply DBSCAN clustering
+        dbscan = DBSCAN(
+            min_samples=self._min_samples, eps=self._eps
         )
-        labels = hdbscan.fit_predict(stacked_vectors)
+        labels = dbscan.fit_predict(stacked_vectors)
         if all(label == -1 for label in labels):
             # its all images of the same person
             # so all variations upon that person looks like noise
