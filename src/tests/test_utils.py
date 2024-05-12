@@ -4,7 +4,7 @@ import os
 import shutil
 from typing import Any
 from pixelbrain.utils import get_logger
-
+import re
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -104,3 +104,10 @@ def profile_callstack(func):
 
 def assert_env_var_present(env_var: str):
     return env_var in os.environ and os.environ[env_var] != ""
+
+
+def remove_number_suffix(input_string):
+    match = re.search(r'(\D+)(\d*)$', input_string)
+    if match:
+        return match.group(1)
+    return input_string
