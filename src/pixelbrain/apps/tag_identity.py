@@ -4,7 +4,7 @@ def main():
     parser = argparse.ArgumentParser(description='''
         This is an Identity Tagging Pipeline App. It takes an image dataset and assignes identities to images with the same person in it.
         The pipeline includes applying a people detector to filter out non-person images, and then applying an identifying strategy.
-        The identifying strategy is using a vector database and can be either 'hdbscan' or 'pairwise'.
+        The identifying strategy is using a vector database and can be either 'dbscan' or 'pairwise'.
         The results are stored in a MongoDB database with a specified ID.
         Optionally, the metadata database can be exported as a CSV file to a specified path.
     ''')
@@ -12,7 +12,7 @@ def main():
     parser.add_argument('--database_id', type=str, default="identity_tagging_db", help='[Optional] Mongo Database ID')
     parser.add_argument('--identity_field_name', type=str, default='assigned_identity', help='[Optional] Identity field name for storing identities in database')
     parser.add_argument('--apply_people_detector', action='store_true', default=False, help='[Optional] Apply people detector as the first stage of the pipeline to filter out non-person images (default to True)')
-    parser.add_argument('--identifying_strategy', type=str, default='hdbscan', help="[Optional] Identifying strategy can be either 'hdbscan' or 'pairwise' (defaults to hdbscan)")
+    parser.add_argument('--identifying_strategy', type=str, default='dbscan', help="[Optional] Identifying strategy can be either 'dbscan' or 'pairwise' (defaults to dbscan)")
     parser.add_argument('--export', type=str, default=None, help="[Optional] Path to export matadata database as csv to")
     parser.add_argument('--rm', action='store_true', default=False, help="[Optional] Flag whether to delete metadata and vector database after the run (defaults to False)")
 

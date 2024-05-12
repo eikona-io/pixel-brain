@@ -11,7 +11,7 @@ class IdentityTaggingPipeline(TaggingPipeline):
                  database: Database,
                  identity_field_name: str = 'assigned_identity',
                  apply_people_detector: bool = True,
-                 identifying_strategy: str = 'hdbscan',
+                 identifying_strategy: str = 'dbscan',
                  pairwise_exclude_group: str = None):
         super().__init__(images_path, database)
         

@@ -51,8 +51,8 @@ def people_identifier_module_run(strategy, data_path, nof_images_per_subject):
                 assert (
                     len(set(orig_identities)) == 1
                 ), "Not all original identities are the same"
-                if strategy == "hdbscan":
-                    # hdbscan should find all subject photos
+                if strategy == "dbscan":
+                    # dbscan should find all subject photos
                     assert (
                         len(same_identity_images) == nof_images_per_subject
                     ), "Not all subject photos were found (found {}, expected {})".format(
@@ -70,23 +70,23 @@ def test_people_identifier_module_pairwise_strategy():
 
 
 @pytest.mark.slow_suit
-def test_people_identifier_module_hdbscan_strategy_multiple_people():
+def test_people_identifier_module_dbscan_strategy_multiple_people():
     people_identifier_module_run(
-        "hdbscan",
+        "dbscan",
         f"{PIXELBRAIN_PATH}/assets/test_data/subjects",
         nof_images_per_subject=3,
     )
 
 
 @pytest.mark.slow_suit
-def test_people_identifier_module_hdbscan_strategy_one_person():
+def test_people_identifier_module_dbscan_strategy_one_person():
     people_identifier_module_run(
-        "hdbscan",
+        "dbscan",
         f"{PIXELBRAIN_PATH}/src/tests/people_identifier/test_identity_1",
         nof_images_per_subject=6,  # 8 images for subject 1, in 2 we can't find a face
     )
     people_identifier_module_run(
-        "hdbscan",
+        "dbscan",
         f"{PIXELBRAIN_PATH}/src/tests/people_identifier/test_identity_2",
         nof_images_per_subject=12,  # 14 images for subject 2, in 2 we can't find a face
     )
