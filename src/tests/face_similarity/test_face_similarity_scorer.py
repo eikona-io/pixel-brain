@@ -13,7 +13,7 @@ def test_face_similarity_scorer():
         source_dir=source_dir,
         compare_to_dir=compare_to_dir,
         source_type="local",
-        scoring_strategy="nearest",
+        scoring_strategies="nearest",
     )
     results = scorer.process()
     assert isinstance(
@@ -36,7 +36,7 @@ def test_face_similarity_scorer_with_cloudinary_source():
         source_dir=source_dir,
         compare_to_dir=compare_to_dir,
         source_type="cloudinary",
-        scoring_strategy="nearest",
+        scoring_strategies="nearest",
     )
     results = scorer.process()
     assert isinstance(
@@ -60,7 +60,7 @@ def strategies_experiment():
             source_dir=source_dir,
             compare_to_dir=compare_dir,
             source_type=source_type,
-            scoring_strategy=strategy,
+            scoring_strategies=strategy,
         )
         results = scorer.process()
         return results
