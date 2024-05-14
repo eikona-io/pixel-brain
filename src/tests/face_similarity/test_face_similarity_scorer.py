@@ -1,4 +1,6 @@
 from pixelbrain.apps.face_similarity.face_similarity_scorer import FaceSimilartyScorer
+from pixelbrain.database import Database
+from tests.test_utils import DeleteDatabaseAfterTest
 import os
 import pytest
 
@@ -9,21 +11,36 @@ module_path = os.path.dirname(os.path.abspath(__file__))
 def test_face_similarity_scorer():
     source_dir = f"{module_path}/data/source"
     compare_to_dir = f"{module_path}/data/compare_to"
-    scorer = FaceSimilartyScorer(
-        source_dir=source_dir,
-        compare_to_dir=compare_to_dir,
-        source_type="local",
-        scoring_strategies="nearest",
-    )
-    results = scorer.process()
-    assert isinstance(
-        results, list
-    ), "The result should be a list of image paths or cloudinary public ids."
-    assert len(results) == 2, "The result list should contain 2 results."
-    expected_first_result = f"{source_dir}/1_2.jpeg"
-    assert (
-        results[0] == expected_first_result
-    ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
+    db = Database()
+    score_field_name = "sim_score"
+    with DeleteDatabaseAfterTest(db):
+        scorer = FaceSimilartyScorer(
+            source_dir=source_dir,
+            compare_to_dir=compare_to_dir,
+            database=db,
+            source_type="local",
+            scoring_strategies=["nearest"],
+            score_field_name_prefix=score_field_name,
+        )
+        scorer.process()
+        results_meta = db.find_images_with_value(
+            f"{score_field_name}_nearest",
+            value=None,
+            sort_by=f"{score_field_name}_nearest",
+            ascending=True,
+        )
+        results = [result["_id"] for result in results_meta]
+        assert isinstance(
+            results, list
+        ), "The result should be a list of image paths or cloudinary public ids."
+        assert len(results) == 2, "The result list should contain 2 results."
+        expected_first_result = f"{source_dir}/1_2.jpeg"
+        assert (
+            results[0] == expected_first_result
+        ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
+
+
+test_face_similarity_scorer()
 
 
 @pytest.mark.slow_suit
@@ -36,7 +53,7 @@ def test_face_similarity_scorer_with_cloudinary_source():
         source_dir=source_dir,
         compare_to_dir=compare_to_dir,
         source_type="cloudinary",
-        scoring_strategies="nearest",
+        scoring_strategies=["nearest"],
     )
     results = scorer.process()
     assert isinstance(
