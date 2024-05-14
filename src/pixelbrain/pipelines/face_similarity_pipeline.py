@@ -27,7 +27,7 @@ class FaceSimilarityPipeline(TaggingPipeline):
         database: Database,
         scoring_strategy: str = "nearest",
         score_field_name: str = "face_similarity_score",
-        n_closest_compare_to_to_consider: int = 40,
+        n_closest_compare_to_to_consider: int = 15,
         k_nearest: int = 5,
         tested_embedding_field_name: str = f"face_embedding_tested_{uuid4().hex[:16]}",
         compare_to_embedding_field_name: str = f"face_embedding_compare_to_{uuid4().hex[:16]}",
