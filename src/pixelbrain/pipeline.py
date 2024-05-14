@@ -161,12 +161,12 @@ class TaggingPipeline(DataProcessor):
         pass
 
 
-class ParallelModules:
+class ParallelProcessors:
     """
-    Class to run multiple PipelineModules instances in parallel using multiprocessing.
+    Class to run multiple DataProcessors instances in parallel using multiprocessing.
     """
 
-    def __init__(self, modules: List[PipelineModule]):
+    def __init__(self, modules: List[DataProcessor]):
         """
         Initialize the ParallelPipelines class.
 
@@ -174,7 +174,7 @@ class ParallelModules:
         """
         self._modules = modules
 
-    def _run_pipeline(self, module: PipelineModule, queue: multiprocessing.Queue):
+    def _run_pipeline(self, module: DataProcessor, queue: multiprocessing.Queue):
         """
         Run a single pipeline and stream its logs to the queue.
         """
