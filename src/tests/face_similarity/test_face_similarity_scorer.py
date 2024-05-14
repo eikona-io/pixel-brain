@@ -40,30 +40,39 @@ def test_face_similarity_scorer():
         ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
 
 
-test_face_similarity_scorer()
-
-
 @pytest.mark.slow_suit
 def test_face_similarity_scorer_with_cloudinary_source():
     compare_to_dir = "user_photos/test_score_id/raw"
     source_dir = (
         "user_images/generated_images/demo/6e90b780-4be7-4504-8f73-966e0dbcd44c"
     )
-    scorer = FaceSimilartyScorer(
-        source_dir=source_dir,
-        compare_to_dir=compare_to_dir,
-        source_type="cloudinary",
-        scoring_strategies=["nearest"],
-    )
-    results = scorer.process()
-    assert isinstance(
-        results, list
-    ), "The result should be a list of image paths or cloudinary public ids."
-    assert len(results) == 2, "The result list should contain 2 results."
-    expected_first_result = f"{source_dir}/1"
-    assert (
-        results[0] == expected_first_result
-    ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
+    db = Database()
+    score_field_name = "sim_score"
+    with DeleteDatabaseAfterTest(db):
+        scorer = FaceSimilartyScorer(
+            source_dir=source_dir,
+            compare_to_dir=compare_to_dir,
+            database=db,
+            source_type="cloudinary",
+            scoring_strategies=["nearest"],
+            score_field_name_prefix=score_field_name,
+        )
+        scorer.process()
+        results_meta = db.find_images_with_value(
+            f"{score_field_name}_nearest",
+            value=None,
+            sort_by=f"{score_field_name}_nearest",
+            ascending=True,
+        )
+        results = [result["_id"] for result in results_meta]
+        assert isinstance(
+            results, list
+        ), "The result should be a list of image paths or cloudinary public ids."
+        assert len(results) == 2, "The result list should contain 2 results."
+        expected_first_result = f"{source_dir}/1"
+        assert (
+            results[0] == expected_first_result
+        ), f"Expected the first result to be {expected_first_result}, but got {results[0]}"
 
 
 def strategies_experiment():
