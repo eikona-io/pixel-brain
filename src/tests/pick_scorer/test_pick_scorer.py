@@ -8,10 +8,10 @@ import re
 
 
 @pytest.mark.slow_suit
-def test_pick_scorer_module():
-    database = Database(database_id="pick_scorer")
+def pick_scorer_module_run(batch_size: int):
+    database = Database()
     data = DataLoader(
-        f"{PIXELBRAIN_PATH}/src/tests/pick_scorer/test_identity_1", database
+        f"{PIXELBRAIN_PATH}/src/tests/pick_scorer/test_identity_1", database, batch_size=batch_size
     )
 
     prompt = "a man"
@@ -31,9 +31,18 @@ def test_pick_scorer_module():
             assert image_idx == int(image_name)
 
 
+def test_pick_scorer_module():
+    pick_scorer_module_run(batch_size=1)
+
+def test_pick_scorer_module_batch_size_4():
+    pick_scorer_module_run(batch_size=4)
+
+
 def extract_name_from_path(path):
     match = re.search(r"/([^/]+)\.png$", path)
     if match:
         return match.group(1)
     else:
         return None
+
+test_pick_scorer_module_batch_size_4()
