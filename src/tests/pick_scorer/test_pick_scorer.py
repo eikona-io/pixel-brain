@@ -44,5 +44,3 @@ def extract_name_from_path(path):
         return match.group(1)
     else:
         return None
-
-test_pick_scorer_module_batch_size_4()
