@@ -3,7 +3,7 @@ from montydb import MontyClient
 import chromadb
 from chromadb.config import Settings
 import numpy as np
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Union
 import shutil
 import pandas as pd
 import os
@@ -73,7 +73,7 @@ class Database:
         )
 
     def store_field(
-        self, image_id: str, field_name: str, field_value: str or np.ndarray
+        self, image_id: str, field_name: Union[str, int, float], field_value: str or np.ndarray
     ):
         """
         Store a field in the database.

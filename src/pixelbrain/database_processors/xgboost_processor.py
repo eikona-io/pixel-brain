@@ -219,7 +219,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
 
         for record, prediction in zip(data, predictions):
             self._database.store_field(
-                record["_id"], self._prediction_field_name, prediction
+                record["_id"], self._prediction_field_name, float(prediction)
             )
 
     def _load_data(self):
