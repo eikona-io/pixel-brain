@@ -85,7 +85,7 @@ def vector_db_multiple_vectors_run(mongo_key=None, pinecone_key=None):
             db.store_field(f"test_id_{i}", "test_field", random_vector)
         if pinecone_key:
             time.sleep(20)  # sync pinecone
-        metas, dists = db.query_vector_field(
+        metas, dists, _ = db.query_vector_field(
             "test_field", np.random.normal(0, np.sqrt(10), 512), n_results=5
         )
         assert len(metas) == 5
@@ -116,7 +116,7 @@ def vector_db_single_vector_run(mongo_key=None, pinecone_key=None):
         db.store_field(test_id, "test_field", rand_vec)
         if pinecone_key:
             time.sleep(15)  # sync pinecone
-        metas, dists = db.query_vector_field("test_field", rand_vec2)
+        metas, dists, _ = db.query_vector_field("test_field", rand_vec2)
         assert len(metas) == 1
         assert dists[0] > 0.0, "different vector should have greater than 0 distance"
         if pinecone_key:

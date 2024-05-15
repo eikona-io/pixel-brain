@@ -122,13 +122,13 @@ class EmbeddingDistanceScorerModule:
             if not isinstance(tested_vector, np.ndarray):
                 raise RuntimeError("No valid vector found in the tested field.")
             # Query the database for the closest n vectors
-            closest_meta, _ = self.database.query_vector_field(
-                self.compare_to_field, tested_vector, n_results=n_closest_vectors
+            _, _, closest_vectors = self.database.query_vector_field(
+                self.compare_to_field,
+                tested_vector,
+                n_results=n_closest_vectors,
+                include_vectors=True,
+                include_meta=False,
             )
-            closest_vectors = [
-                self.database.get_field(image["_id"], self.compare_to_field)
-                for image in closest_meta
-            ]
             if len(closest_vectors) == 0 or not isinstance(
                 closest_vectors[0], np.ndarray
             ):

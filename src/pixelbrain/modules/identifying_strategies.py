@@ -84,7 +84,7 @@ class PairwiseIdentifyingStrategy(IdentifyingStrategy):
                 # image was paired
                 continue
 
-            nearest_images, distances = self._db.query_vector_field(
+            nearest_images, distances, _ = self._db.query_vector_field(
                 self._vector_field_name, image_vec, n_results=10
             )
 
