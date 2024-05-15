@@ -13,6 +13,7 @@ import os
 from os import environ
 import torch
 from typing import List, Union
+import copy
 
 MAX_RESULTS = 1000
 
@@ -83,9 +84,11 @@ class CloudinaryDataLoader(DataLoader):
         """
         Gets all the images public ids from the prefix provided
         """
-        if isinstance(self._images_path, list) and all(isinstance(item, str) for item in self._images_path):
+        if isinstance(self._images_path, list) and all(
+            isinstance(item, str) for item in self._images_path
+        ):
             # images public ids were explicitly provided upon instantiation
-            return self._images_path
+            return copy.deepcopy(self._images_path)
         raw_results = cloudinary.api.resources(
             type="upload", prefix=self._images_path, max_results=MAX_RESULTS
         )

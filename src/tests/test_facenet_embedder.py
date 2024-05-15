@@ -46,7 +46,7 @@ def calculate_self_distances(subject, db: Database):
 def calculate_closest_other_distance(subject, db: Database):
     subject_1_path = f"{PIXELBRAIN_PATH}/assets/test_data/subjects/{subject}_1.jpeg"
     vec = db.get_field(subject_1_path, "face_embedding")
-    metadatas, dists = db.query_vector_field("face_embedding", vec, n_results=5)
+    metadatas, dists, _ = db.query_vector_field("face_embedding", vec, n_results=5)
     for metadata, distance in zip(metadatas, dists):
         id = metadata["_id"]
         match = re.search(r'/(\d+)_\d+.jpeg', id)

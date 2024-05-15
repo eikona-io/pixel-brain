@@ -3,7 +3,7 @@ from montydb import MontyClient
 import chromadb
 from chromadb.config import Settings
 import numpy as np
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Union, Optional
 import shutil
 import pandas as pd
 import os
@@ -73,7 +73,10 @@ class Database:
         )
 
     def store_field(
-        self, image_id: str, field_name: str, field_value: str or np.ndarray
+        self,
+        image_id: str,
+        field_name: Union[str, int, float],
+        field_value: str or np.ndarray,
     ):
         """
         Store a field in the database.
@@ -115,8 +118,13 @@ class Database:
             )
 
     def query_vector_field(
-        self, field_name: str, query: np.ndarray, n_results=1
-    ) -> Tuple[List[dict], List[float]]:
+        self,
+        field_name: str,
+        query: np.ndarray,
+        n_results: int = 1,
+        include_vectors: bool = False,
+        include_meta: bool = True,
+    ) -> Tuple[List[dict], List[float], Optional[List[np.ndarray]]]:
         """
         Query the relevant vector index for n_results closest images
         and return closest results metadata and distance metric
@@ -124,12 +132,23 @@ class Database:
         :param field_name: The name of the field to query.
         :param query: The query vector.
         :param n_results: The number of results to return. Default is 1.
+        :param include_vectors: Whether to include the vectors in the results. Default is False.
+        :param include_meta: Whether to include the metadata in the results. Default is True.
         :return: A tuple containing a list of the closest result metadata and a list of distance metrics.
         """
         index_fqn = f"{self._db_id}-{field_name}"
-        return self._query_vector(index_fqn, query, n_results)
+        return self._query_vector(
+            index_fqn, query, n_results, include_vectors, include_meta
+        )
 
-    def _query_vector(self, index_fqn: str, query: np.ndarray, n_results):
+    def _query_vector(
+        self,
+        index_fqn: str,
+        query: np.ndarray,
+        n_results: int,
+        include_vectors: bool,
+        include_meta: bool,
+    ):
         if isinstance(self._vector_db, Index):
             try:
                 results = self._vector_db.query(
@@ -147,10 +166,24 @@ class Database:
                 index = self._vector_db.get_collection(index_fqn)
             except ValueError as err:
                 raise RuntimeError(f"Cant find {index_fqn} in vector database")
-            results = index.query(query.tolist(), n_results=n_results)
-            results_meta = [self.find_image(image_id) for image_id in results["ids"][0]]
+            include = ["distances"]
+            if include_vectors:
+                include += ["embeddings"]
+            results = index.query(query.tolist(), n_results=n_results, include=include)
+            results_meta = (
+                [self.find_image(image_id) for image_id in results["ids"][0]]
+                if include_meta
+                else None
+            )
             results_dists = results["distances"][0]
-            return results_meta, results_dists
+            results_embeddings = None
+            if include_vectors:
+                results_embeddings = results["embeddings"][0]
+                results_embeddings = [
+                    np.array(embedding) for embedding in results_embeddings
+                ]
+
+            return results_meta, results_dists, results_embeddings
 
     def find_image(self, image_id: str) -> dict:
         """
@@ -240,6 +273,16 @@ class Database:
             return list(self._db.images.find(query).sort(sort_by, sort_order))
         else:
             return list(self._db.images.find(query))
+
+    def find_images_with_fields(self, field_names: List[str]) -> List[Dict[str, Any]]:
+        """
+        Find all images in the database that have all the specified fields.
+
+        :param field_names: A list of field names to check for existence in the image documents.
+        :return: A list of all image documents that have all the specified fields.
+        """
+        query = {field_name: {"$exists": True} for field_name in field_names}
+        return list(self._db.images.find(query))
 
     def aggregate_on_field(
         self, field_name: str, sort_order: int = -1
