@@ -176,11 +176,13 @@ class Database:
                 else None
             )
             results_dists = results["distances"][0]
-            results_embeddings = results["embeddings"][0] if include_vectors else None
-            results_embeddings = [
-                np.array(embedding) for embedding in results_embeddings
-            ]
-            
+            results_embeddings = None
+            if include_vectors:
+                results_embeddings = results["embeddings"][0]
+                results_embeddings = [
+                    np.array(embedding) for embedding in results_embeddings
+                ]
+
             return results_meta, results_dists, results_embeddings
 
     def find_image(self, image_id: str) -> dict:
