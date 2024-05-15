@@ -241,6 +241,16 @@ class Database:
         else:
             return list(self._db.images.find(query))
 
+    def find_images_with_fields(self, field_names: List[str]) -> List[Dict[str, Any]]:
+        """
+        Find all images in the database that have all the specified fields.
+
+        :param field_names: A list of field names to check for existence in the image documents.
+        :return: A list of all image documents that have all the specified fields.
+        """
+        query = {field_name: {"$exists": True} for field_name in field_names}
+        return list(self._db.images.find(query))
+
     def aggregate_on_field(
         self, field_name: str, sort_order: int = -1
     ) -> List[Dict[str, Any]]:
