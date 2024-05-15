@@ -178,13 +178,15 @@ class ParallelProcessors:
         """
         Run a single pipeline and stream its logs to the queue.
         """
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
         sys.stdout = StreamToQueue(queue)
         sys.stderr = StreamToQueue(queue)
         try:
             module.process()
         finally:
-            sys.stdout = sys.__stdout__
-            sys.stderr = sys.__stderr__
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
     def process(self):
         """
