@@ -5,11 +5,11 @@ from pixelbrain.database import Database
 from pixelbrain.pipeline import DataProcessor
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, roc_auc_score, roc_curve
 from xgboost import XGBRegressor
 
 
-class XGBoostDatabaseTrainer:
+class XGBoostDatabaseRegressorTrainer:
     """
     A class to train an XGBoost model using data from a database.
 
@@ -66,12 +66,19 @@ class XGBoostDatabaseTrainer:
         self._model = None
         self._nof_cv_folds = nof_cv_folds
 
-    def fit(self, save_model_path: str = None):
+    def fit(
+        self,
+        save_model_path: str = None,
+        auc_threshold: float = None,
+        plot_auc_curve: bool = False,
+    ):
         """
         Trains the XGBoost model using GridSearchCV and optionally saves it to a file.
 
         Args:
             save_model_path (str, optional): Path to save the trained model.
+            auc_threshold (float, optional): The threshold value to consider a value as positive for AUC calculation.
+            plot_auc_curve (bool, optional): Whether to plot the AUC curve.
         """
         data = self._load_data()
         if not data:
@@ -86,7 +93,9 @@ class XGBoostDatabaseTrainer:
         if save_model_path:
             self._model.save_model(save_model_path)
 
-        self._run_testing_experiment(X_test, y_test)
+        return self._run_testing_experiment(
+            X_test, y_test, auc_threshold, plot_auc_curve=plot_auc_curve
+        )
 
     def _load_data(self):
         """
@@ -158,21 +167,57 @@ class XGBoostDatabaseTrainer:
         best_model = grid_search.best_estimator_
         return best_model
 
-    def _run_testing_experiment(self, X_test: np.ndarray, y_test: np.ndarray):
+    def _run_testing_experiment(
+        self,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        auc_threshold: float = None,
+        plot_auc_curve: bool = False,
+    ):
         """
-        Runs testing on the trained model and prints the RMSE.
+        Runs testing on the trained model and prints the RMSE and AUC.
 
         Args:
             X_test (np.ndarray): Test feature array.
             y_test (np.ndarray): Test target variable array.
+            auc_threshold (float, optional): The threshold value to consider a value as positive for AUC calculation.
         """
         predictions = self._model.predict(X_test)
+
+        # Calculate RMSE
         rmse = np.sqrt(mean_squared_error(y_test, predictions))
         print(f"Testing RMSE: {rmse}")
-        return rmse
+        if not auc_threshold:
+            return rmse
+
+        # Convert to binary classes for AUC calculation
+        y_test_binary = (y_test >= auc_threshold).astype(int)
+        predictions_binary = (predictions >= auc_threshold).astype(int)
+
+        auc = roc_auc_score(y_test_binary, predictions_binary)
+        print(f"Testing AUC: {auc}")
+
+        # Plot ROC curve
+        if plot_auc_curve:
+            import matplotlib.pyplot as plt
+
+            fpr, tpr, thresholds = roc_curve(y_test_binary, predictions_binary)
+            plt.figure()
+            plt.plot(
+                fpr, tpr, color="blue", lw=2, label=f"ROC curve (area = {auc:.2f})"
+            )
+            plt.plot([0, 1], [0, 1], color="gray", lw=2, linestyle="--")
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel("False Positive Rate")
+            plt.ylabel("True Positive Rate")
+            plt.title("Receiver Operating Characteristic (ROC) Curve")
+            plt.legend(loc="lower right")
+            plt.show()
+        return rmse, auc
 
 
-class XGBoostDatabaseProcessor(DataProcessor):
+class XGBoostDatabasProcessor(DataProcessor):
     """
     A class to process data using a pre-trained XGBoost model and store predictions in the database.
 

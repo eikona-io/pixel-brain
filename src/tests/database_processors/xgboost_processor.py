@@ -4,8 +4,8 @@ import pandas as pd
 import xgboost as xgb
 from pixelbrain.database import Database
 from pixelbrain.database_processors.xgboost_processor import (
-    XGBoostDatabaseTrainer,
-    XGBoostDatabaseProcessor,
+    XGBoostDatabaseRegressorTrainer,
+    XGBoostDatabasProcessor,
 )
 from tempfile import TemporaryDirectory
 
@@ -27,7 +27,7 @@ class TestXGBoostDatabaseTrainer(unittest.TestCase):
         self.database.store_field("2", "feature2", 3.0)
         self.database.store_field("2", "target", 4.0)
 
-        self.trainer = XGBoostDatabaseTrainer(
+        self.trainer = XGBoostDatabaseRegressorTrainer(
             database=self.database,
             data_field_names=self.data_field_names,
             metric_field_name=self.metric_field_name,
@@ -62,7 +62,7 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
         self.database.store_field("2", "target", 4.0)
 
         # Train a simple model and save it
-        trainer = XGBoostDatabaseTrainer(
+        trainer = XGBoostDatabaseRegressorTrainer(
             database=self.database,
             data_field_names=self.data_field_names,
             metric_field_name="target",
@@ -76,7 +76,7 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             trainer.fit(save_model_path=f"{tmpdir}/test_model.xgb")
 
-            self.processor = XGBoostDatabaseProcessor(
+            self.processor = XGBoostDatabasProcessor(
                 database=self.database,
                 data_field_names=self.data_field_names,
                 model_path=f"{tmpdir}/test_model.xgb",
