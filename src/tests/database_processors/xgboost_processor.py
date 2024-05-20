@@ -5,7 +5,7 @@ import xgboost as xgb
 from pixelbrain.database import Database
 from pixelbrain.database_processors.xgboost_processor import (
     XGBoostDatabaseRegressorTrainer,
-    XGBoostDatabasProcessor,
+    XGBoostDatabaseProcessor,
 )
 from tempfile import TemporaryDirectory
 
@@ -76,7 +76,7 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             trainer.fit(save_model_path=f"{tmpdir}/test_model.xgb")
 
-            self.processor = XGBoostDatabasProcessor(
+            self.processor = XGBoostDatabaseProcessor(
                 database=self.database,
                 data_field_names=self.data_field_names,
                 model_path=f"{tmpdir}/test_model.xgb",

@@ -5,7 +5,7 @@ from pixelbrain.database import Database
 from pixelbrain.pipeline import DataProcessor
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error, roc_auc_score, roc_curve
+from sklearn.metrics import mean_squared_error, roc_auc_score, roc_curve, make_scorer
 from xgboost import XGBRegressor
 
 
@@ -30,6 +30,7 @@ class XGBoostDatabaseRegressorTrainer:
         test_split: float = 0.1,
         param_grid: Dict[str, List[Any]] = None,
         nof_cv_folds: int = 5,
+        mse_weights_func: callable = None,
     ):
         """
         Initializes the XGBoostDatabaseTrainer with the given parameters.
@@ -41,6 +42,7 @@ class XGBoostDatabaseRegressorTrainer:
             test_split (float): The proportion of data to be used for testing.
             param_grid (Dict[str, List[Any]], optional): Grid of parameters for GridSearchCV.
             nof_cv_folds (int, optional): Number of folds for cross-validation.
+            mse_weights_func (callable, optional): A function that takes a target value and returns a weight for the MSE calculation.
         """
         self._database = database
         self._data_field_names = data_field_names
@@ -65,6 +67,33 @@ class XGBoostDatabaseRegressorTrainer:
         )
         self._model = None
         self._nof_cv_folds = nof_cv_folds
+        self._mse_weights_func = mse_weights_func
+        self._scorer = make_scorer(
+            self._make_weighted_mse_scorer(mse_weights_func), greater_is_better=False
+        )
+
+    @staticmethod
+    def _make_weighted_mse_scorer(mse_weights_func: callable):
+        def _weighted_mse_scorer(y_true, y_pred):
+            weights = (
+                mse_weights_func(y_true) if mse_weights_func else np.ones(len(y_true))
+            )
+            return np.mean(weights * (y_true - y_pred) ** 2)
+
+        return _weighted_mse_scorer
+
+    @staticmethod
+    def _make_weighted_mse_objective(mse_weights_func: callable):
+        def _weighted_mse_objective(y_pred, y_true):
+            weights = (
+                mse_weights_func(y_true) if mse_weights_func else np.ones(len(y_true))
+            )
+            residual = y_true - y_pred
+            grad = weights * residual
+            hess = weights
+            return grad, hess
+
+        return _weighted_mse_objective
 
     def fit(
         self,
@@ -154,11 +183,13 @@ class XGBoostDatabaseRegressorTrainer:
         Returns:
             XGBRegressor: The trained XGBoost model.
         """
-        xgb_model = XGBRegressor(objective="reg:squarederror")
+        xgb_model = XGBRegressor(
+            objective=self._make_weighted_mse_objective(self._mse_weights_func)
+        )
         grid_search = GridSearchCV(
             estimator=xgb_model,
             param_grid=self._param_grid,
-            scoring="neg_mean_squared_error",
+            scoring=self._scorer,
             cv=self._nof_cv_folds,
             verbose=1,
             n_jobs=-1,
@@ -217,7 +248,7 @@ class XGBoostDatabaseRegressorTrainer:
         return rmse, auc
 
 
-class XGBoostDatabasProcessor(DataProcessor):
+class XGBoostDatabaseProcessor(DataProcessor):
     """
     A class to process data using a pre-trained XGBoost model and store predictions in the database.
 
