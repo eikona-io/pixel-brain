@@ -43,6 +43,7 @@ class XGBoostDatabaseRegressorTrainer:
             param_grid (Dict[str, List[Any]], optional): Grid of parameters for GridSearchCV.
             nof_cv_folds (int, optional): Number of folds for cross-validation.
             mse_weights_func (callable, optional): A function that takes a target value and returns a weight for the MSE calculation.
+                                                    weights_func(y_true: np.array) -> np.array
         """
         self._database = database
         self._data_field_names = data_field_names
@@ -58,11 +59,8 @@ class XGBoostDatabaseRegressorTrainer:
                 "subsample": [0.5, 0.7, 0.9],
                 "colsample_bytree": [0.6, 0.8],
                 "colsample_bylevel": [0.6, 0.8],
-                "colsample_bynode": [0.8, 1],
                 "gamma": [0],
                 "min_child_weight": [1],
-                # "reg_alpha": [0, 0.01],
-                # "reg_lambda": [1, 1.1],
             }
         )
         self._model = None
@@ -134,7 +132,8 @@ class XGBoostDatabaseRegressorTrainer:
             List[Dict[str, Any]]: List of records from the database.
         """
         field_names = self._data_field_names + [self._metric_field_name]
-        images = self._database.find_images_with_fields(field_names)
+        filters = {field_name: None for field_name in field_names}
+        images = self._database.find_images_with_filters(filters)
         return images
 
     def _prepare_data(self, data: List[Dict[str, Any]]):
@@ -233,6 +232,7 @@ class XGBoostDatabaseRegressorTrainer:
             import matplotlib.pyplot as plt
 
             fpr, tpr, thresholds = roc_curve(y_test_binary, predictions_binary)
+            print(f"FPR: {fpr}, TPR: {tpr}, Thresholds: {thresholds}")
             plt.figure()
             plt.plot(
                 fpr, tpr, color="blue", lw=2, label=f"ROC curve (area = {auc:.2f})"
@@ -265,6 +265,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
         database: Database,
         data_field_names: List[str],
         model_path: str,
+        filters: Dict[str, Any] = None,
         prediction_field_name: str = "xgb_score",
     ):
         """
@@ -274,6 +275,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
             database (Database): The database instance to fetch data from.
             data_field_names (List[str]): List of field names to be used as features.
             model_path (str): Path to the pre-trained model.
+            filters (Dict[str, Any], optional): Filters to apply to the database.
             prediction_field_name (str, optional): The field name to store predictions.
         """
         self._database = database
@@ -282,6 +284,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
         self._prediction_field_name = prediction_field_name
         self._model = xgb.Booster()
         self._model.load_model(self._model_path)
+        self._filters = filters
 
     def process(self):
         """
@@ -322,7 +325,10 @@ class XGBoostDatabaseProcessor(DataProcessor):
         Returns:
             List[Dict[str, Any]]: List of records from the database.
         """
-        images = self._database.find_images_with_fields(self._data_field_names)
+        filters = {field_name: None for field_name in self._data_field_names}
+        if self._filters is not None:
+            filters.update(self._filters)
+        images = self._database.find_images_with_filters(filters)
         return images
 
     def _prepare_data(self, data: List[Dict[str, Any]]):

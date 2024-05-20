@@ -85,7 +85,7 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
 
     def test_process(self):
         self.processor.process()
-        for record in self.database.find_images_with_fields(self.data_field_names):
+        for record in self.database.find_images_with_filters(self.data_field_names):
             self.assertIn("xgb_score", record)
 
 
