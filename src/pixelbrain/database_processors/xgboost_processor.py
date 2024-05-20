@@ -4,6 +4,9 @@ from typing import List, Dict, Any
 from pixelbrain.database import Database
 from pixelbrain.pipeline import DataProcessor
 import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import mean_squared_error
+from xgboost import XGBRegressor
 
 
 class XGBoostDatabaseTrainer:
@@ -16,9 +19,7 @@ class XGBoostDatabaseTrainer:
         metric_field_name (str): The field name to be used as the target variable.
         validation_split (float): The proportion of data to be used for validation.
         xgb_params (Dict[str, Any]): Parameters for the XGBoost model.
-        model (xgb.Booster): The trained XGBoost model.
-        num_boost_round (int): Number of boosting rounds.
-        early_stopping_rounds (int): Rounds for early stopping.
+        model (XGBRegressor): The trained XGBoost model.
     """
 
     def __init__(
@@ -26,12 +27,9 @@ class XGBoostDatabaseTrainer:
         database: Database,
         data_field_names: List[str],
         metric_field_name: str,
-        validation_split: float = 0.2,
-        xgb_max_depth: int = 6,
-        xgb_eta: float = 0.3,
-        xgb_verbosity: int = 1,
-        xgb_num_boost_round: int = 100,
-        xgb_early_stopping_rounds: int = 10,
+        test_split: float = 0.1,
+        param_grid: Dict[str, List[Any]] = None,
+        nof_cv_folds: int = 5,
     ):
         """
         Initializes the XGBoostDatabaseTrainer with the given parameters.
@@ -40,30 +38,33 @@ class XGBoostDatabaseTrainer:
             database (Database): The database instance to fetch data from.
             data_field_names (List[str]): List of field names to be used as features.
             metric_field_name (str): The field name to be used as the target variable.
-            validation_split (float): The proportion of data to be used for validation.
-            xgb_max_depth (int): Maximum depth of the XGBoost trees.
-            xgb_eta (float): Learning rate for XGBoost.
-            xgb_verbosity (int): Verbosity level for XGBoost.
-            xgb_num_boost_round (int): Number of boosting rounds.
-            xgb_early_stopping_rounds (int): Rounds for early stopping.
+            test_split (float): The proportion of data to be used for testing.
+            param_grid (Dict[str, List[Any]], optional): Grid of parameters for GridSearchCV.
+            nof_cv_folds (int, optional): Number of folds for cross-validation.
         """
         self._database = database
         self._data_field_names = data_field_names
         self._metric_field_name = metric_field_name
-        self._validation_split = validation_split
-        self._xgb_params = {
-            "objective": "reg:squarederror",
-            "max_depth": xgb_max_depth,
-            "eta": xgb_eta,
-            "verbosity": xgb_verbosity,
+        self._test_split = test_split
+        self._param_grid = param_grid if param_grid else {
+            "max_depth": [3, 6, 9],
+            "learning_rate": [0.01, 0.1, 0.3],
+            "n_estimators": [100, 200, 300],
+            "subsample": [0.5, 0.7, 0.9],
+            "colsample_bytree": [0.6, 0.8],
+            "colsample_bylevel": [0.6, 0.8],
+            "colsample_bynode": [0.8, 1],
+            "gamma": [0],
+            "min_child_weight": [1],
+            # "reg_alpha": [0, 0.01],
+            # "reg_lambda": [1, 1.1],
         }
         self._model = None
-        self._num_boost_round = xgb_num_boost_round
-        self._early_stopping_rounds = xgb_early_stopping_rounds
+        self._nof_cv_folds = nof_cv_folds
 
     def fit(self, save_model_path: str = None):
         """
-        Trains the XGBoost model and optionally saves it to a file.
+        Trains the XGBoost model using GridSearchCV and optionally saves it to a file.
 
         Args:
             save_model_path (str, optional): Path to save the trained model.
@@ -74,14 +75,14 @@ class XGBoostDatabaseTrainer:
 
         X, y = self._prepare_data(data)
 
-        X_train, X_val, y_train, y_val = self._split_data(X, y)
+        X_train, X_test, y_train, y_test = self._split_data(X, y)
 
-        self._model = self._train_model(X_train, y_train, X_val, y_val)
+        self._model = self._train_model(X_train, y_train)
 
         if save_model_path:
             self._model.save_model(save_model_path)
 
-        self._run_validation_experiment(X_val, y_val)
+        self._run_testing_experiment(X_test, y_test)
 
     def _load_data(self):
         """
@@ -111,63 +112,60 @@ class XGBoostDatabaseTrainer:
 
     def _split_data(self, X: np.ndarray, y: np.ndarray):
         """
-        Splits the data into training and validation sets.
+        Splits the data into training and test sets.
 
         Args:
             X (np.ndarray): Feature array.
             y (np.ndarray): Target variable array.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Training and validation sets.
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Training and test sets.
         """
-        split_index = int(len(X) * (1 - self._validation_split))
-        X_train, X_val = X[:split_index], X[split_index:]
-        y_train, y_val = y[:split_index], y[split_index:]
-        return X_train, X_val, y_train, y_val
+        split_index = int(len(X) * (1 - self._test_split))
+        X_train, X_test = X[:split_index], X[split_index:]
+        y_train, y_test = y[:split_index], y[split_index:]
+        return X_train, X_test, y_train, y_test
 
     def _train_model(
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: np.ndarray,
-        y_val: np.ndarray,
     ):
         """
-        Trains the XGBoost model.
+        Trains the XGBoost model using GridSearchCV.
 
         Args:
             X_train (np.ndarray): Training feature array.
             y_train (np.ndarray): Training target variable array.
-            X_val (np.ndarray): Validation feature array.
-            y_val (np.ndarray): Validation target variable array.
 
         Returns:
-            xgb.Booster: The trained XGBoost model.
+            XGBRegressor: The trained XGBoost model.
         """
-        dtrain = xgb.DMatrix(X_train, label=y_train)
-        dval = xgb.DMatrix(X_val, label=y_val)
-        evals = [(dtrain, "train"), (dval, "eval")]
-        model = xgb.train(
-            self._xgb_params,
-            dtrain,
-            num_boost_round=self._num_boost_round,
-            evals=evals,
-            early_stopping_rounds=self._early_stopping_rounds,
+        xgb_model = XGBRegressor(objective="reg:squarederror")
+        grid_search = GridSearchCV(
+            estimator=xgb_model,
+            param_grid=self._param_grid,
+            scoring="neg_mean_squared_error",
+            cv=self._nof_cv_folds,
+            verbose=1,
+            n_jobs=-1,
         )
-        return model
+        grid_search.fit(X_train, y_train)
+        best_model = grid_search.best_estimator_
+        return best_model
 
-    def _run_validation_experiment(self, X_val: np.ndarray, y_val: np.ndarray):
+    def _run_testing_experiment(self, X_test: np.ndarray, y_test: np.ndarray):
         """
-        Runs validation on the trained model and prints the RMSE.
+        Runs testing on the trained model and prints the RMSE.
 
         Args:
-            X_val (np.ndarray): Validation feature array.
-            y_val (np.ndarray): Validation target variable array.
+            X_test (np.ndarray): Test feature array.
+            y_test (np.ndarray): Test target variable array.
         """
-        dval = xgb.DMatrix(X_val)
-        predictions = self._model.predict(dval)
-        rmse = np.sqrt(np.mean((predictions - y_val) ** 2))
-        print(f"Validation RMSE: {rmse}")
+        predictions = self._model.predict(X_test)
+        rmse = np.sqrt(mean_squared_error(y_test, predictions))
+        print(f"Testing RMSE: {rmse}")
+        return rmse
 
 
 class XGBoostDatabaseProcessor(DataProcessor):
