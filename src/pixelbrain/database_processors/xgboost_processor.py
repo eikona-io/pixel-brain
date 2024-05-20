@@ -46,19 +46,23 @@ class XGBoostDatabaseTrainer:
         self._data_field_names = data_field_names
         self._metric_field_name = metric_field_name
         self._test_split = test_split
-        self._param_grid = param_grid if param_grid else {
-            "max_depth": [3, 6, 9],
-            "learning_rate": [0.01, 0.1, 0.3],
-            "n_estimators": [100, 200, 300],
-            "subsample": [0.5, 0.7, 0.9],
-            "colsample_bytree": [0.6, 0.8],
-            "colsample_bylevel": [0.6, 0.8],
-            "colsample_bynode": [0.8, 1],
-            "gamma": [0],
-            "min_child_weight": [1],
-            # "reg_alpha": [0, 0.01],
-            # "reg_lambda": [1, 1.1],
-        }
+        self._param_grid = (
+            param_grid
+            if param_grid
+            else {
+                "max_depth": [3, 6, 9],
+                "learning_rate": [0.01, 0.1, 0.3],
+                "n_estimators": [100, 200, 300],
+                "subsample": [0.5, 0.7, 0.9],
+                "colsample_bytree": [0.6, 0.8],
+                "colsample_bylevel": [0.6, 0.8],
+                "colsample_bynode": [0.8, 1],
+                "gamma": [0],
+                "min_child_weight": [1],
+                # "reg_alpha": [0, 0.01],
+                # "reg_lambda": [1, 1.1],
+            }
+        )
         self._model = None
         self._nof_cv_folds = nof_cv_folds
 
@@ -207,18 +211,33 @@ class XGBoostDatabaseProcessor(DataProcessor):
         """
         Processes the data and stores predictions in the database.
         """
-        data = self._load_data()
-        if not data:
-            raise ValueError("No data found in the database for the specified fields.")
 
-        X = self._prepare_data(data)
+        X, raw_data = self.get_prepared_data(return_raw_data=True)
 
         predictions = self.predict(X)
 
-        for record, prediction in zip(data, predictions):
+        for record, prediction in zip(raw_data, predictions):
             self._database.store_field(
                 record["_id"], self._prediction_field_name, float(prediction)
             )
+
+    def get_prepared_data(self, return_raw_data: bool = False):
+        """
+        Loads data from the database and prepares it for prediction.
+
+        Args:
+            return_raw_data (bool, optional): Whether to return the raw data or the prepared data.
+
+        Returns:
+            np.ndarray: Prepared data.
+        """
+        data = self._load_data()
+        if not data:
+            raise ValueError("No data found in the database for the specified fields.")
+        prep_data = self._prepare_data(data)
+        if return_raw_data:
+            return data, prep_data
+        return prep_data
 
     def _load_data(self):
         """
