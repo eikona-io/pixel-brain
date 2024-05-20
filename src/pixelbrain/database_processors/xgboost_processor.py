@@ -242,10 +242,8 @@ class XGBoostDatabaseProcessor(DataProcessor):
         Returns:
             np.ndarray: Feature array.
         """
-        X = []
-        for record in data:
-            X.append([record[field] for field in self._data_field_names])
-        X = np.array(X)
+        df = pd.DataFrame(data)
+        X = df[self._data_field_names].values
         return X
 
     def predict(self, data: np.ndarray):
