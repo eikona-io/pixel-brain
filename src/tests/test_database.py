@@ -359,7 +359,7 @@ def test_find_images_with_fields():
         mock_db.store_field("img4", "field3", "value3")
 
         # Test the find_images_with_fields method
-        result = mock_db.find_images_with_fields(["field1", "field2"])
+        result = mock_db.find_images_with_filters({"field1": "value1", "field2": "value2"})
         assert len(result) == 2, "Should return two images"
         assert any(
             img["_id"] == "img1" for img in result
@@ -368,7 +368,7 @@ def test_find_images_with_fields():
             img["_id"] == "img4" for img in result
         ), "img4 should be in the result"
 
-        result = mock_db.find_images_with_fields(["field1"])
+        result = mock_db.find_images_with_filters({"field1": None})
         assert len(result) == 3, "Should return three images"
         assert any(
             img["_id"] == "img1" for img in result
@@ -380,7 +380,7 @@ def test_find_images_with_fields():
             img["_id"] == "img4" for img in result
         ), "img4 should be in the result"
 
-        result = mock_db.find_images_with_fields(["field3"])
+        result = mock_db.find_images_with_filters({"field3": None})
         assert len(result) == 1, "Should return one image"
         assert any(
             img["_id"] == "img4" for img in result

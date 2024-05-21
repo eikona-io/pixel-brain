@@ -132,3 +132,4 @@ cython_debug/
 chroma/
 :bson:/
 monty/
+*pkl
