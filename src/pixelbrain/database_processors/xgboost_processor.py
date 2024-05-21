@@ -9,12 +9,13 @@ from sklearn.metrics import mean_squared_error, roc_auc_score, roc_curve, make_s
 from xgboost import XGBRegressor
 
 
-class XGBoostDatabaseRegressorTrainer:
+
+class XGBoostRegressorTrainer:
     """
-    A class to train an XGBoost model using data from a database.
+    A class to train an XGBoost model using data from a pandas DataFrame.
 
     Attributes:
-        database (Database): The database instance to fetch data from.
+        data_frame (pd.DataFrame): The DataFrame containing the data.
         data_field_names (List[str]): List of field names to be used as features.
         metric_field_name (str): The field name to be used as the target variable.
         validation_split (float): The proportion of data to be used for validation.
@@ -24,7 +25,7 @@ class XGBoostDatabaseRegressorTrainer:
 
     def __init__(
         self,
-        database: Database,
+        data_frame: pd.DataFrame,
         data_field_names: List[str],
         metric_field_name: str,
         test_split: float = 0.1,
@@ -33,10 +34,10 @@ class XGBoostDatabaseRegressorTrainer:
         mse_weights_func: callable = None,
     ):
         """
-        Initializes the XGBoostDatabaseTrainer with the given parameters.
+        Initializes the XGBoostRegressorTrainer with the given parameters.
 
         Args:
-            database (Database): The database instance to fetch data from.
+            data_frame (pd.DataFrame): The DataFrame containing the data.
             data_field_names (List[str]): List of field names to be used as features.
             metric_field_name (str): The field name to be used as the target variable.
             test_split (float): The proportion of data to be used for testing.
@@ -45,7 +46,7 @@ class XGBoostDatabaseRegressorTrainer:
             mse_weights_func (callable, optional): A function that takes a target value and returns a weight for the MSE calculation.
                                                     weights_func(y_true: np.array) -> np.array
         """
-        self._database = database
+        self._data_frame = data_frame
         self._data_field_names = data_field_names
         self._metric_field_name = metric_field_name
         self._test_split = test_split
@@ -107,48 +108,38 @@ class XGBoostDatabaseRegressorTrainer:
             auc_threshold (float, optional): The threshold value to consider a value as positive for AUC calculation.
             plot_auc_curve (bool, optional): Whether to plot the AUC curve.
         """
-        data = self._load_data()
-        if not data:
-            raise ValueError("No data found in the database for the specified fields.")
+        X, y = self._prepare_data(self._data_frame)
 
-        X, y = self._prepare_data(data)
-
-        X_train, X_test, y_train, y_test = self._split_data(X, y)
+        X_train, X_test, y_train, y_test, split_index = self._split_data(X, y)
+        test_data = self._data_frame.iloc[split_index:]
 
         self._model = self._train_model(X_train, y_train)
 
         if save_model_path:
             self._model.save_model(save_model_path)
 
-        return self._run_testing_experiment(
+        test_prediction = self._run_testing_experiment(
             X_test, y_test, auc_threshold, plot_auc_curve=plot_auc_curve
         )
 
-    def _load_data(self):
-        """
-        Loads data from the database.
+        test_predictions = [
+            {"index": idx, "prediction": prediction, "target": record[self._metric_field_name]}
+            for idx, (record, prediction) in enumerate(zip(test_data.to_dict('records'), test_prediction))
+        ]
+        return test_predictions
 
-        Returns:
-            List[Dict[str, Any]]: List of records from the database.
-        """
-        field_names = self._data_field_names + [self._metric_field_name]
-        filters = {field_name: None for field_name in field_names}
-        images = self._database.find_images_with_filters(filters)
-        return images
-
-    def _prepare_data(self, data: List[Dict[str, Any]]):
+    def _prepare_data(self, data: pd.DataFrame):
         """
         Prepares the data for training.
 
         Args:
-            data (List[Dict[str, Any]]): List of records from the database.
+            data (pd.DataFrame): The DataFrame containing the data.
 
         Returns:
             Tuple[np.ndarray, np.ndarray]: Features and target variable arrays.
         """
-        df = pd.DataFrame(data)
-        X = df[self._data_field_names].values
-        y = df[self._metric_field_name].values
+        X = data[self._data_field_names].values
+        y = data[self._metric_field_name].values
         return X, y
 
     def _split_data(self, X: np.ndarray, y: np.ndarray):
@@ -165,7 +156,7 @@ class XGBoostDatabaseRegressorTrainer:
         split_index = int(len(X) * (1 - self._test_split))
         X_train, X_test = X[:split_index], X[split_index:]
         y_train, y_test = y[:split_index], y[split_index:]
-        return X_train, X_test, y_train, y_test
+        return X_train, X_test, y_train, y_test, split_index
 
     def _train_model(
         self,
@@ -218,7 +209,7 @@ class XGBoostDatabaseRegressorTrainer:
         rmse = np.sqrt(mean_squared_error(y_test, predictions))
         print(f"Testing RMSE: {rmse}")
         if not auc_threshold:
-            return rmse
+            return y_test
 
         # Convert to binary classes for AUC calculation
         y_test_binary = (y_test >= auc_threshold).astype(int)
@@ -245,8 +236,7 @@ class XGBoostDatabaseRegressorTrainer:
             plt.title("Receiver Operating Characteristic (ROC) Curve")
             plt.legend(loc="lower right")
             plt.show()
-        return rmse, auc
-
+        return predictions
 
 class XGBoostDatabaseProcessor(DataProcessor):
     """
@@ -315,7 +305,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
             raise ValueError("No data found in the database for the specified fields.")
         prep_data = self._prepare_data(data)
         if return_raw_data:
-            return data, prep_data
+            return prep_data, data
         return prep_data
 
     def _load_data(self):
