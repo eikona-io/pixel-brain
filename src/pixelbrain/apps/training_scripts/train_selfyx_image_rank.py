@@ -77,23 +77,30 @@ def train_selfyx_image_rank():
         save_model_path=model_save_path, auc_threshold=np.log(4)
     )
     wandb.log({"test_preds": log_weighted_test_preds})
-    
+
     # log test predictions plot
     plt_save_path = "test_preds.png"
     plot_test_preds(log_weighted_test_preds, plt_save_path)
     wandb.log({"test_preds_plot": wandb.Image(plt_save_path)})
-    
+
     # log model artifact
-    model_artifact = wandb.Artifact(name="xgboost_rating_model", type="model")
+    model_metadata = {
+        "training_field_names": data_field_names,
+    }
+    model_artifact = wandb.Artifact(
+        name=f"xgboost_rating_model-{run_name}",
+        type="model",
+        metadata=model_metadata,
+    )
     model_artifact.add_file(model_save_path)
-    wandb.log_artifact(model_artifact)
-    
+    wandb.log_artifact(model_artifact, aliases="latest")
+
     # log dataset artifact
     data_save_path = "xgboost_training_data.csv"
     data_df.to_csv(data_save_path, index=False)
-    data_artifact = wandb.Artifact(name="training_data", type="dataset")
+    data_artifact = wandb.Artifact(name=f"training_data-{run_name}", type="dataset")
     data_artifact.add_file(data_save_path)
-    wandb.log_artifact(data_artifact)
+    wandb.log_artifact(data_artifact, aliases="latest")
     print("Finished training model!")
 
 
