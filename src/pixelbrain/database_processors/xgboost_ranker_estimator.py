@@ -71,14 +71,14 @@ class XgboostRankerEstimator(BaseEstimator):
 
         return self
 
-    def predict(self, X, y=None, return_groups=True):
+    def predict(self, X, y=None):
         """
         Generates predictions for the input data X.
 
         Parameters:
         -----------
         X: pandas.DataFrame
-            Input data for which predictions should be generated, where the last column should be the query ID.
+            Input data for which predictions should be generated
         y: numpy.array
             Training target labels.
 
@@ -90,13 +90,13 @@ class XgboostRankerEstimator(BaseEstimator):
 
         qids = X[self.group_by_field].values
         preds = self.model.predict(X.drop(columns=[self.group_by_field]))
-        if return_groups:
-            df = pd.DataFrame(
-                list(zip(qids, preds)), columns=[self.group_by_field, self.score_field]
-            )
-            return df
-        else:
-            return preds
+        df = pd.DataFrame(
+            list(zip(qids, preds)), columns=[self.group_by_field, self.score_field]
+        )
+        return df
+
+    def save_model(self, path: str):
+        self.model.save_model(path)
 
 
 def mean_grouped_ndcg_score(y_true, y_pred, k=None):
@@ -104,22 +104,15 @@ def mean_grouped_ndcg_score(y_true, y_pred, k=None):
     Calculates the mean NDCG score for each group in y_pred and average them.
     """
     ndcg_scores = []
-    group_ids = y_pred[:, 0]
+    group_ids = y_pred.iloc[:, 0]
     y_true = y_true.reset_index(drop=True)
     y_pred = y_pred.reset_index(drop=True)
     for group_id in group_ids.unique():
         group_mask = group_ids == group_id
         y_true_masked = y_true[group_mask]
         y_pred_masked = y_pred[group_mask]
-        ndcg = ndcg_score([y_true_masked], [y_pred_masked[:, 1]], k=k)
+        ndcg = ndcg_score([y_true_masked], [y_pred_masked.iloc[:, 1]], k=k)
         ndcg_scores.append(ndcg)
 
     average_ndcg = sum(ndcg_scores) / len(ndcg_scores)
     return average_ndcg
-
-
-def make_mean_grouped_ndcg_score(k=None):
-    """
-    Returns a function that calculates the mean NDCG score for each group in y_pred and average them.
-    """
-    return make_scorer(mean_grouped_ndcg_score, greater_is_better=True, k=k)

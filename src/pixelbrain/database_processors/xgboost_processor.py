@@ -5,11 +5,16 @@ from pixelbrain.database import Database
 from pixelbrain.pipeline import DataProcessor
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error, roc_auc_score, roc_curve, make_scorer
-from xgboost import XGBRegressor
+from sklearn.metrics import make_scorer
 from abc import ABC, abstractmethod
 from sklearn.base import BaseEstimator
 from overrides import overrides
+from pixelbrain.database_processors.xgboost_ranker_estimator import (
+    XgboostRankerEstimator,
+    mean_grouped_ndcg_score,
+)
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from xgboost import XGBRegressor
 
 
 class XGBoostTrainer(ABC):
@@ -76,10 +81,10 @@ class XGBoostTrainer(ABC):
 
         self._trained_model, best_params = self._train_model(X_train, y_train)
 
+        test_metric = self._run_testing_experiment(X_test, y_test)
+
         if save_model_path:
             self._trained_model.save_model(save_model_path)
-
-        test_metric = self._run_testing_experiment(X_test, y_test)
 
         return test_metric, best_params
 
@@ -93,12 +98,12 @@ class XGBoostTrainer(ABC):
         Returns:
             Tuple[np.ndarray, np.ndarray]: Features and target variable arrays.
         """
-        X = data[self._data_field_names].values
-        y = data[self._metric_field_name].values
+        X = data[self._data_field_names]
+        y = data[self._metric_field_name]
         return X, y
 
     @abstractmethod
-    def _split_data(self, X: np.ndarray, y: np.ndarray):
+    def _split_data(self, X: pd.DataFrame, y: pd.Series):
         """
         Splits the data into training and test sets.
 
@@ -113,8 +118,8 @@ class XGBoostTrainer(ABC):
 
     def _train_model(
         self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
     ):
         """
         Trains the XGBoost model using GridSearchCV.
@@ -131,7 +136,7 @@ class XGBoostTrainer(ABC):
             estimator=self._model,
             param_grid=self._param_grid,
             scoring=make_scorer(self._scorer, greater_is_better=True),
-            cv=self._nof_cv_folds,
+            cv=self._get_cv_folds(X_train, y_train),
             verbose=1,
             n_jobs=-1,
         )
@@ -139,6 +144,12 @@ class XGBoostTrainer(ABC):
         best_model = grid_search.best_estimator_
         best_params = grid_search.best_params_
         return best_model, best_params
+
+    def _get_cv_folds(self, X: pd.DataFrame, y: pd.Series):
+        """
+        Returns the CV folds for the given data.
+        """
+        pass
 
     def _run_testing_experiment(
         self,
@@ -213,7 +224,14 @@ class XGBoostRegressorTrainer(XGBoostTrainer):
         return _weighted_mse_objective
 
     @overrides
-    def _split_data(self, X: np.ndarray, y: np.ndarray):
+    def _get_cv_folds(self, X: pd.DataFrame, y: pd.Series):
+        """
+        Returns the CV folds for the given data.
+        """
+        return self._nof_cv_folds
+
+    @overrides
+    def _split_data(self, X: pd.DataFrame, y: pd.Series):
         """
         Splits the data into training and test sets.
 
@@ -227,6 +245,57 @@ class XGBoostRegressorTrainer(XGBoostTrainer):
         split_index = int(len(X) * (1 - self._test_split))
         X_train, X_test = X[:split_index], X[split_index:]
         y_train, y_test = y[:split_index], y[split_index:]
+        return X_train, X_test, y_train, y_test
+
+
+class XGBoostRankerTrainer(XGBoostTrainer):
+    """
+    A class to train an XGBoost Ranker model using data from a pandas DataFrame.
+    """
+
+    def __init__(
+        self,
+        *args,
+        group_by_field_name: str = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._scorer = mean_grouped_ndcg_score
+        self._model = XgboostRankerEstimator(
+            group_by_field=group_by_field_name,
+        )
+        self._group_by_field_name = group_by_field_name
+
+    @overrides
+    def _get_cv_folds(self, X: pd.DataFrame, y: pd.Series):
+        gkf = GroupKFold(n_splits=self._nof_cv_folds)
+        groups = X[self._group_by_field_name].values
+        return gkf.split(X, y, groups=groups)
+
+    @overrides
+    def _split_data(self, X: pd.DataFrame, y: pd.Series):
+        """
+        Splits the data into training and test sets.
+
+        Args:
+            X (np.ndarray): Feature array.
+            y (np.ndarray): Target variable array.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Training and test sets.
+        """
+
+        grouped_df = self._data_frame.sort_values(
+            by=[self._group_by_field_name, self._metric_field_name],
+            ascending=[True, False],
+        )
+        groups = grouped_df[self._group_by_field_name].values
+        gss = GroupShuffleSplit(
+            test_size=self._test_split, n_splits=1, random_state=22
+        ).split(X, y, groups=groups)
+        train_idx, test_idx = next(gss)
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
         return X_train, X_test, y_train, y_test
 
 
@@ -249,6 +318,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
         model_path: str,
         filters: Dict[str, Any] = None,
         prediction_field_name: str = "xgb_score",
+        
     ):
         """
         Initializes the XGBoostDatabaseProcessor with the given parameters.
