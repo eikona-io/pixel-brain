@@ -49,12 +49,19 @@ def train_selfyx_image_rank():
         metric_field_name,
         group_by_field_name=group_by_field_name,
     )
-    test_ndcg, best_params = trainer.fit(save_model_path=model_save_path)
+    test_ndcg, best_params, X_test, y_test, y_pred = trainer.fit(
+        save_model_path=model_save_path, return_test_predictions=True
+    )
 
     print(f"Test NDCG: {test_ndcg}")
     print(f"Best params: {best_params}")
-    wandb.log({"test_ndcg": test_ndcg, "best_params": best_params})
-
+    wandb.log(
+        {
+            "test_ndcg": test_ndcg,
+            "best_params": best_params,
+            "y_pred": y_pred,
+        }
+    )
     # log model artifact
     model_metadata = {
         "training_field_names": data_field_names,
@@ -72,7 +79,7 @@ def train_selfyx_image_rank():
     # log dataset artifact
     data_save_path = "xgboost_training_data.csv"
     data_df.to_csv(data_save_path, index=False)
-    data_artifact = wandb.Artifact(name=f"training_data-{run_name}", type="dataset")    
+    data_artifact = wandb.Artifact(name=f"training_data-{run_name}", type="dataset")
     data_artifact.add_file(data_save_path)
     wandb.log_artifact(data_artifact, aliases="latest")
     print("Finished training model!")

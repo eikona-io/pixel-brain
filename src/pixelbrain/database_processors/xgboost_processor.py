@@ -68,6 +68,7 @@ class XGBoostTrainer(ABC):
     def fit(
         self,
         save_model_path: str = None,
+        return_test_predictions: bool = False,
     ):
         """
         Trains the XGBoost model using GridSearchCV and optionally saves it to a file.
@@ -81,11 +82,13 @@ class XGBoostTrainer(ABC):
 
         self._trained_model, best_params = self._train_model(X_train, y_train)
 
-        test_metric = self._run_testing_experiment(X_test, y_test)
+        test_metric, y_pred = self._run_testing_experiment(X_test, y_test)
 
         if save_model_path:
             self._trained_model.save_model(save_model_path)
 
+        if return_test_predictions:
+            return test_metric, best_params, X_test, y_test, y_pred
         return test_metric, best_params
 
     def _prepare_data(self, data: pd.DataFrame):
@@ -162,11 +165,14 @@ class XGBoostTrainer(ABC):
         Args:
             X_test (np.ndarray): Test feature array.
             y_test (np.ndarray): Test target variable array.
+
+        Returns:
+            Tuple[float, np.ndarray]: Test metric and predictions.
         """
         predictions = self._trained_model.predict(X_test)
 
         metric = self._scorer(y_test, predictions)
-        return metric
+        return metric, predictions
 
 
 class XGBoostRegressorTrainer(XGBoostTrainer):
