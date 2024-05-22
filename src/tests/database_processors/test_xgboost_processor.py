@@ -103,7 +103,7 @@ class TestXGBoostRankerTrainer(unittest.TestCase):
         self.database = Database()
         self.metric_field_name = "target"
         self.test_group_by_field_name = "group"
-        self.data_field_names = ["feature1", "feature2", self.test_group_by_field_name]
+        self.data_field_names = ["feature1", "feature2"]
 
         # Insert some dummy data into the database
         self.database.add_image("1", "1")
@@ -162,6 +162,18 @@ class TestXGBoostRankerTrainer(unittest.TestCase):
             self.assertIsNotNone(self.trainer._trained_model)
             assert os.path.exists(f"{tmpdir}/test_model.xgb")
 
-
+    def test_process_with_ranker(self):
+        with TemporaryDirectory() as tmpdir:
+            self.trainer.fit(save_model_path=f"{tmpdir}/test_model.xgb")
+            processor = XGBoostDatabaseProcessor(
+                database=self.database,
+                data_field_names=self.data_field_names,
+                model_path=f"{tmpdir}/test_model.xgb",
+                prediction_field_name="xgb_rank_score",
+            )
+            processor.process()
+            filters = {"feature1": None, "feature2": None, "target": None, "group": None}
+            for record in self.database.find_images_with_filters(filters):
+                self.assertIn("xgb_rank_score", record)
 if __name__ == "__main__":
     unittest.main()

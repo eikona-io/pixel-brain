@@ -298,6 +298,21 @@ class XGBoostRankerTrainer(XGBoostTrainer):
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
         return X_train, X_test, y_train, y_test
 
+    @overrides
+    def _prepare_data(self, data: pd.DataFrame):
+        """
+        Prepares the data for training.
+        Adding the group by field is required for the ranker model.
+        Args:
+            data (pd.DataFrame): The DataFrame containing the data.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Features and target variable arrays.
+        """
+        X = data[self._data_field_names + [self._group_by_field_name]]
+        y = data[self._metric_field_name]
+        return X, y
+
 
 class XGBoostDatabaseProcessor(DataProcessor):
     """
@@ -318,7 +333,6 @@ class XGBoostDatabaseProcessor(DataProcessor):
         model_path: str,
         filters: Dict[str, Any] = None,
         prediction_field_name: str = "xgb_score",
-        
     ):
         """
         Initializes the XGBoostDatabaseProcessor with the given parameters.
