@@ -111,6 +111,10 @@ def mean_grouped_ndcg_score(y_true, y_pred, k=None):
         group_mask = group_ids == group_id
         y_true_masked = y_true[group_mask]
         y_pred_masked = y_pred[group_mask]
+        if len(y_pred_masked) == 1:
+            # can't compute ndcg for groups with only one document
+            # skipping the score of this group
+            continue
         ndcg = ndcg_score([y_true_masked], [y_pred_masked.iloc[:, 1]], k=k)
         ndcg_scores.append(ndcg)
 

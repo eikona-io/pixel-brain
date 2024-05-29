@@ -15,6 +15,7 @@ from pixelbrain.database_processors.xgboost_ranker_estimator import (
 )
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit
 from xgboost import XGBRegressor
+from typing import Callable
 
 
 class XGBoostTrainer(ABC):
@@ -51,11 +52,11 @@ class XGBoostTrainer(ABC):
             if param_grid
             else {
                 "max_depth": [3, 6, 9],
-                "learning_rate": [0.01, 0.1, 0.3],
+                "learning_rate": [0.01, 0.1],
                 "n_estimators": [100, 200, 300],
-                "subsample": [0.5, 0.7, 0.9],
-                "colsample_bytree": [0.6, 0.8],
-                "colsample_bylevel": [0.6, 0.8],
+                "subsample": [0.3, 0.5, 0.7, 0.9],
+                "colsample_bytree": [0.4, 0.6, 0.8],
+                "colsample_bylevel": [0.4, 0.6, 0.8],
                 "gamma": [0],
                 "min_child_weight": [1],
             }
@@ -339,6 +340,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
         model_path: str,
         filters: Dict[str, Any] = None,
         prediction_field_name: str = "xgb_score",
+        preprocess_fn: Callable[[pd.DataFrame], pd.DataFrame] = None,
     ):
         """
         Initializes the XGBoostDatabaseProcessor with the given parameters.
@@ -349,6 +351,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
             model_path (str): Path to the pre-trained model.
             filters (Dict[str, Any], optional): Filters to apply to the database.
             prediction_field_name (str, optional): The field name to store predictions.
+            preprocess_fn (Callable[[pd.DataFrame], pd.DataFrame], optional): A lambda function to preprocess the data.
         """
         self._database = database
         self._data_field_names = data_field_names
@@ -357,6 +360,7 @@ class XGBoostDatabaseProcessor(DataProcessor):
         self._model = xgb.Booster()
         self._model.load_model(self._model_path)
         self._filters = filters
+        self._preprocess_fn = preprocess_fn
 
     def process(self):
         """
@@ -414,6 +418,8 @@ class XGBoostDatabaseProcessor(DataProcessor):
             np.ndarray: Feature array.
         """
         df = pd.DataFrame(data)
+        if self._preprocess_fn:
+            df = self._preprocess_fn(df)
         X = df[self._data_field_names].values
         return X
 
