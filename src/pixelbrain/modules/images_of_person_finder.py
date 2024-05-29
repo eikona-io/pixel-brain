@@ -1,12 +1,11 @@
-import torch
 from pixelbrain.pipeline import PipelineModule, Database, DataLoader
 from typing import Dict, List, Union
 from pixelbrain.pre_processors.deepface import DeepfacePreprocessor
 import requests
-from io import BytesIO
 from torchvision.io import read_image, ImageReadMode
 from torch import Tensor
 from deepface import DeepFace
+import tempfile
 
 
 class ImagesOfPersonFinder(PipelineModule):
@@ -29,8 +28,10 @@ class ImagesOfPersonFinder(PipelineModule):
         if path_to_person_image.startswith(
             "http://"
         ) or path_to_person_image.startswith("https://"):
-            response = requests.get(path_to_person_image)
-            image = read_image(BytesIO(response.content), mode=ImageReadMode.RGB)
+            with tempfile.NamedTemporaryFile(delete=True, suffix=".jpg") as temp_file:
+                temp_file.write(requests.get(path_to_person_image).content)
+                response = temp_file.name
+                image = read_image(response, mode=ImageReadMode.RGB)
         else:
             image = read_image(path_to_person_image, mode=ImageReadMode.RGB)
 
