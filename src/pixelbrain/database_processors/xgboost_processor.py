@@ -51,11 +51,11 @@ class XGBoostTrainer(ABC):
             if param_grid
             else {
                 "max_depth": [3, 6, 9],
-                "learning_rate": [0.01, 0.1, 0.3],
+                "learning_rate": [0.01, 0.1],
                 "n_estimators": [100, 200, 300],
-                "subsample": [0.5, 0.7, 0.9],
-                "colsample_bytree": [0.6, 0.8],
-                "colsample_bylevel": [0.6, 0.8],
+                "subsample": [0.3, 0.5, 0.7, 0.9],
+                "colsample_bytree": [0.4, 0.6, 0.8],
+                "colsample_bylevel": [0.4, 0.6, 0.8],
                 "gamma": [0],
                 "min_child_weight": [1],
             }
