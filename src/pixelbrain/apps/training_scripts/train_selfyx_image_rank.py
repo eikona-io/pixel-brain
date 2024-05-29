@@ -42,7 +42,6 @@ def train_selfyx_image_rank():
         .to_dict()
     )  # for use during inference
     data_df["prompt_name"] = data_df["prompt_name_cat"]
-    # data_df["prompt_name_cat2"] = data_df["prompt_name"].map(prompt_name_to_cat)
 
     current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
     run_name = f"selfyx-image-ranker-{current_date}"
