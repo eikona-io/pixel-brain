@@ -9,6 +9,7 @@ from pixelbrain.database_processors.xgboost_processor import (
 from tempfile import TemporaryDirectory
 import os
 
+
 class TestXGBoostDatabaseTrainer(unittest.TestCase):
     def setUp(self):
         # Create a simple in-memory database
@@ -39,7 +40,7 @@ class TestXGBoostDatabaseTrainer(unittest.TestCase):
             data_field_names=self.data_field_names,
             metric_field_name=self.metric_field_name,
             test_split=0.5,
-            nof_cv_folds=2
+            nof_cv_folds=2,
         )
 
     def test_fit(self):
@@ -78,7 +79,7 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
             data_field_names=self.data_field_names,
             metric_field_name="target",
             test_split=0.5,
-            nof_cv_folds=2
+            nof_cv_folds=2,
         )
         with TemporaryDirectory() as tmpdir:
             trainer.fit(save_model_path=f"{tmpdir}/test_model.xgb")
@@ -90,10 +91,30 @@ class TestXGBoostDatabaseProcessor(unittest.TestCase):
                 prediction_field_name="xgb_score",
             )
 
+            def preprocess_fn(df):
+                df["feature3"] = df["feature1"] * 2
+                return df
+
+            self.processor_with_pp = XGBoostDatabaseProcessor(
+                database=self.database,
+                data_field_names=self.data_field_names,
+                model_path=f"{tmpdir}/test_model.xgb",
+                prediction_field_name="xgb_score",
+                preprocess_fn=preprocess_fn,
+            )
+
     def test_process(self):
         self.processor.process()
         filters = {"feature1": None, "feature2": None, "target": None}
         for record in self.database.find_images_with_filters(filters):
+            self.assertIn("xgb_score", record)
+
+    def test_preprocess_fn(self):
+        self.processor_with_pp.process()
+        filters = {"feature1": None, "feature2": None, "target": None}
+        image_records = self.database.find_images_with_filters(filters)
+        assert len(image_records) > 0
+        for record in image_records:
             self.assertIn("xgb_score", record)
 
 
@@ -153,7 +174,7 @@ class TestXGBoostRankerTrainer(unittest.TestCase):
             data_field_names=self.data_field_names,
             metric_field_name=self.metric_field_name,
             test_split=0.25,
-            nof_cv_folds=2
+            nof_cv_folds=2,
         )
 
     def test_fit(self):
@@ -172,8 +193,15 @@ class TestXGBoostRankerTrainer(unittest.TestCase):
                 prediction_field_name="xgb_rank_score",
             )
             processor.process()
-            filters = {"feature1": None, "feature2": None, "target": None, "group": None}
+            filters = {
+                "feature1": None,
+                "feature2": None,
+                "target": None,
+                "group": None,
+            }
             for record in self.database.find_images_with_filters(filters):
                 self.assertIn("xgb_rank_score", record)
+
+
 if __name__ == "__main__":
     unittest.main()
