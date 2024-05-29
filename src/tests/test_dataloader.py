@@ -83,3 +83,74 @@ def test_filter_method():
         assert len(dl) == 41, "there should be 41 image with category"
         dl.filter("category", "1")
         assert len(dl) == 21, "there should be 21 image with category 1"
+
+
+def test_dataloader_with_remote_urls():
+    # Initializing the Database and DataLoader classes with remote URLs
+    db = Database()
+    remote_urls = [
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+    ]
+    with DeleteDatabaseAfterTest(db):
+        dl = DataLoader(remote_urls, db, decode_images=True, load_images=True)
+
+        # Testing the __next__ method returns correct image tensor
+        batch_ids, batch_imgs = next(dl)
+        assert len(batch_ids) == 1 and len(batch_imgs) == 1, "there should be 1 image"
+        assert isinstance(batch_ids[0], str)
+        assert isinstance(batch_imgs[0], torch.Tensor)
+        assert (
+            len(batch_imgs[0].shape) == 3
+        ), f"wrong shape for batch_images: {batch_imgs[0].shape}"
+
+        # Testing the length of the DataLoader
+        assert len(dl) == 2, "there should be 2 images"
+
+def test_dataloader_with_remote_urls_batch_size_3():
+    # Initializing the Database and DataLoader classes with remote URLs
+    db = Database()
+    remote_urls = [
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+    ]
+    with DeleteDatabaseAfterTest(db):
+        dl = DataLoader(remote_urls, db, decode_images=True, load_images=True, batch_size=3)
+
+        # Testing the __next__ method returns correct image tensor
+        batch_ids, batch_imgs = next(dl)
+        assert len(batch_ids) == 3 and len(batch_imgs) == 3, "there should be batch_size images"
+        assert isinstance(batch_ids[0], str)
+        assert isinstance(batch_imgs[0], torch.Tensor)
+        assert (
+            len(batch_imgs[0].shape) == 3
+        ), f"wrong shape for batch_images: {batch_imgs[0].shape}"
+
+        # Testing the length of the DataLoader
+        assert len(dl) == 0, "there should be 0 images"
+
+
+def test_dataloader_with_remote_urls_no_decode():
+    # Initializing the Database and DataLoader classes with remote URLs without decoding images
+    db = Database()
+    remote_urls = [
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716993612/user_photos/6c6a27d0-fd89-41bf-bc5b-22352cf0f049/raw/AKuaiKrUTEuBqjxP17Oa6txcypMVM0ecMh7tnFPcLX492vPjZ5Gh6nMRlrCJt_kK2hOFdzZkTjxMbxVJcNSRWLc1-gyOc_bUpw.jpg",
+    ]
+    with DeleteDatabaseAfterTest(db):
+        dl = DataLoader(remote_urls, db, decode_images=False, load_images=False)
+
+        # Testing the __next__ method returns correct image paths
+        batch_ids, batch_imgs = next(dl)
+        assert len(batch_ids) == 1 and len(batch_imgs) == 1, "there should be 1 image"
+        assert isinstance(batch_ids[0], str)
+        assert isinstance(batch_imgs[0], str)
+        assert batch_imgs[0].startswith(
+            "https://"
+        ), f"wrong format for batch_images: {batch_imgs[0]}"
+
+        # Testing the length of the DataLoader
+        assert len(dl) == 2, "there should be 2 images"
