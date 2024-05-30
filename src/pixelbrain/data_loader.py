@@ -11,6 +11,8 @@ from abc import ABC, abstractmethod
 import math
 import requests
 import copy
+import threading
+import time
 
 
 class DataLoaderFilter(ABC):
@@ -55,6 +57,31 @@ class DataLoader:
         self._tempdir = TemporaryDirectory()
         self._decode_images = decode_images
         self._load_images = load_images
+        self._url_cache = {}
+        self._url_download_thread = None
+
+        if isinstance(images_path, list) and any(
+            url.startswith("http") for url in images_path
+        ):
+            self._start_url_download_thread()
+
+    def _start_url_download_thread(self):
+        """This thread will download the images from the URLs in the list asynchronously"""
+
+        def download_images():
+            for url in self._images_path:
+                if url.startswith("http"):
+                    response = requests.get(url)
+                    response.raise_for_status()
+                    temp_filename = f'{self._tempdir.name}/{url.split("/")[-1]}'
+                    with open(temp_filename, "wb") as temp_file:
+                        temp_file.write(response.content)
+                        self._url_cache[url] = temp_file.name
+
+        self._url_download_thread = threading.Thread(
+            target=download_images, daemon=True
+        )
+        self._url_download_thread.start()
 
     def __next__(self) -> Tuple[List[str], List[torch.Tensor]]:
         """
@@ -73,15 +100,19 @@ class DataLoader:
                     # no data left
                     raise StopIteration
                 break
-            image_path = self._image_paths.pop(0)
-            if os.path.exists(image_path):
-                image_path = os.path.realpath(image_path)
+            image_path = self._pop_image_path()
             image_id = f"{image_path}"
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path) if self._load_images else image_path
             image_batch.append(image)
             ids_batch.append(image_id)
         return ids_batch, image_batch
+
+    def _pop_image_path(self):
+        image_path = self._image_paths.pop(0)
+        if os.path.exists(image_path):
+            image_path = os.path.realpath(image_path)
+        return image_path
 
     def _lazy_load_image_paths_if_needed(self):
         if self._image_paths is None:
@@ -130,13 +161,10 @@ class DataLoader:
         """
         Loads image from a remote URL
         """
-        response = requests.get(image_url)
-        response.raise_for_status()
-        temp_filename = f'{self._tempdir.name}/{image_url.split("/")[-1]}'
-        with open(temp_filename, 'wb') as temp_file:
-            temp_file.write(response.content)
-            temp_file_path = temp_file.name
-            return self._read_image(temp_file_path)
+        while image_url not in self._url_cache:
+            time.sleep(0.1)  # Polling interval
+        temp_file_path = self._url_cache[image_url]
+        return self._read_image(temp_file_path)
 
     def _get_all_image_paths(self) -> List[str]:
         """
