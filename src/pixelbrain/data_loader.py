@@ -71,11 +71,11 @@ class DataLoader:
         """This thread will download the images from the URLs in the list asynchronously"""
 
         def download_images():
-            for url in self._images_path:
+            for image_idx, url in enumerate(self._images_path):
                 if url.startswith("http"):
                     response = requests.get(url)
                     response.raise_for_status()
-                    temp_filename = f'{self._tempdir.name}/{url.split("/")[-1]}'
+                    temp_filename = f'{self._tempdir.name}/{image_idx}.{url.split(".")[-1]}'
                     with open(temp_filename, "wb") as temp_file:
                         temp_file.write(response.content)
                         self._url_cache[url] = temp_file.name
