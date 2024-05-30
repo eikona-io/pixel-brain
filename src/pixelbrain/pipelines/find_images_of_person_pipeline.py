@@ -31,7 +31,7 @@ class FindImagesOfPersonPipeline(TaggingPipeline):
             ),
             UploadToCloudinaryModule(
                 upload_dataloader,
-                self._temp_db,
+                self._database,
                 upload_prefix=upload_prefix,
                 filters={self._matched_person_field: True},
             ),

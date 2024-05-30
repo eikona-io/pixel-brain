@@ -60,8 +60,10 @@ class DataLoader:
         self._url_cache = {}
         self._url_download_thread = None
 
-        if isinstance(images_path, list) and any(
-            url.startswith("http") for url in images_path
+        if (
+            isinstance(images_path, list)
+            and load_images
+            and any(url.startswith("http") for url in images_path)
         ):
             self._start_url_download_thread()
 
