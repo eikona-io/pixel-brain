@@ -133,3 +133,5 @@ chroma/
 :bson:/
 monty/
 *pkl
+*DS_Store
+

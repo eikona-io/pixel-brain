@@ -18,9 +18,9 @@ class FindImagesOfPersonPipeline(TaggingPipeline):
         super().__init__(database=database)
         self._temp_db = Database()
         find_data_loader = DataLoader(raw_images_path_or_paths, database=self._temp_db)
-        upload_dataloader = DataLoader(raw_images_path_or_paths, database=self._temp_db)
+        upload_dataloader = DataLoader(raw_images_path_or_paths, database=self._temp_db, load_images=False)
         self._matched_person_field = matched_person_field
-        self._modules = [
+        self._data_processors = [
             ImagesOfPersonFinder(
                 self._temp_db,
                 find_data_loader,

@@ -211,10 +211,12 @@ class DataLoader:
         )
 
     def _get_image_from_path(self, image_path: str) -> str:
-        image_fullpath = os.path.realpath(image_path)
-        image_doc = self._database.find_images_with_value("image_path", image_fullpath)
+        if os.path.exists(image_path):
+            # otherwise its a url
+            image_path = os.path.realpath(image_path)
+        image_doc = self._database.find_images_with_value("image_path", image_path)
         if not image_doc:
-            raise ValueError(f"Could not find image with image_path: {image_fullpath}")
+            raise ValueError(f"Could not find image with image_path: {image_path}")
         assert len(image_doc) == 1, "Only one image doc should have a certain path"
         return image_doc[0]
 
