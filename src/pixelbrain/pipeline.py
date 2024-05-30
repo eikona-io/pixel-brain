@@ -127,9 +127,8 @@ class TaggingPipeline(DataProcessor):
 
     def __init__(
         self,
-        images_path: str,
-        database: Optional[Database],
-        modules: List[PipelineModule] = None,
+        images_path: str = None,
+        database: Optional[Database] = None,
     ):
         """
         Initialize the tagging pipeline.
