@@ -28,8 +28,10 @@ class UploadToCloudinaryModule(PipelineModule):
         self._upload_prefix = upload_prefix
 
     def _process(self, image_ids: List[str], image_paths: List[str]):
-        for image_idx, image_path in enumerate(image_paths):
-            remote_image_path = f"{self._upload_prefix}/{image_idx}"
+        for image_id, image_path in zip(image_ids, image_paths):
+            base_name = os.path.splitext(os.path.basename(image_id))[0]
+            truncated_base_name = base_name[:20]  # sometimes we get really long names
+            remote_image_path = f"{self._upload_prefix}/{truncated_base_name}"
             cloudinary.uploader.upload(
                 image_path,
                 public_id=remote_image_path,
