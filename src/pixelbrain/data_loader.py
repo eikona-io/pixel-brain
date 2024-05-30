@@ -1,14 +1,16 @@
 import torch
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from tempfile import TemporaryDirectory
 from pixelbrain.database import Database
 import os
 import boto3
 import glob
-import random
+import tempfile
 from torchvision.io import read_image, read_file, ImageReadMode
 from abc import ABC, abstractmethod
 import math
+import requests
+import copy
 
 
 class DataLoaderFilter(ABC):
@@ -24,12 +26,12 @@ class DataLoaderFilter(ABC):
 
 class DataLoader:
     """
-    DataLoader class that loads and decodes images either from disk or S3
+    DataLoader class that loads and decodes images either from disk, S3, or remote URLs
     """
 
     def __init__(
         self,
-        images_path: str,
+        images_path: Union[str, List[str]],
         database: Database,
         batch_size=1,
         decode_images=True,
@@ -39,7 +41,7 @@ class DataLoader:
         """
         Initializes the DataLoader with images path, database and batch size
 
-        :param images_path: The path to the images. Can be a local path, S3 path or web URL.
+        :param images_path: The path to the images. Can be a local path, S3 path or web URLs.
         :param database: The database object to use for storing image metadata.
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
@@ -71,7 +73,9 @@ class DataLoader:
                     # no data left
                     raise StopIteration
                 break
-            image_path = os.path.realpath(self._image_paths.pop(0))
+            image_path = self._image_paths.pop(0)
+            if os.path.exists(image_path):
+                image_path = os.path.realpath(image_path)
             image_id = f"{image_path}"
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path) if self._load_images else image_path
@@ -92,13 +96,16 @@ class DataLoader:
         self._lazy_load_image_paths_if_needed()
         return int(math.ceil(len(self._image_paths) / self._batch_size))
 
-    def _load_image(self, image_path):
+    def _load_image(self, image_path: str):
         """
-        Loads image from local or cloud
+        Loads image from local, cloud, or remote URL
         """
-        if self._images_path.startswith("s3://"):
+        if image_path.startswith("s3://"):
             # Load image from S3
             image = self._load_image_from_s3(image_path)
+        elif image_path.startswith("http://") or image_path.startswith("https://"):
+            # Load image from remote URL
+            image = self._load_image_from_url(image_path)
         else:
             # Load image from local
             image = self._load_image_from_local(image_path)
@@ -119,11 +126,26 @@ class DataLoader:
         """
         return self._read_image(image_path)
 
+    def _load_image_from_url(self, image_url):
+        """
+        Loads image from a remote URL
+        """
+        response = requests.get(image_url)
+        response.raise_for_status()
+        temp_filename = f'{self._tempdir.name}/{image_url.split("/")[-1]}'
+        with open(temp_filename, 'wb') as temp_file:
+            temp_file.write(response.content)
+            temp_file_path = temp_file.name
+            return self._read_image(temp_file_path)
+
     def _get_all_image_paths(self) -> List[str]:
         """
         Gets all image paths from the database if remote, or uses glob if local
         """
-        if self._images_path.startswith("s3://"):
+        if isinstance(self._images_path, list):
+            # images urls were explicitly provided upon instantiation
+            return copy.deepcopy(self._images_path)
+        elif self._images_path.startswith("s3://"):
             # Query S3 for image paths
             s3 = boto3.client("s3")
             bucket_name = self._images_path.replace("s3://", "").split("/")[0]
@@ -154,7 +176,11 @@ class DataLoader:
         self._batch_size = batch_size
 
     def _read_image(self, image_path):
-        return read_image(image_path, ImageReadMode.RGB) if self._decode_images else read_file(image_path)
+        return (
+            read_image(image_path, ImageReadMode.RGB)
+            if self._decode_images
+            else read_file(image_path)
+        )
 
     def _get_image_from_path(self, image_path: str) -> str:
         image_fullpath = os.path.realpath(image_path)
