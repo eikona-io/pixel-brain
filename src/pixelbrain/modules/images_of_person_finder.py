@@ -16,6 +16,7 @@ class ImagesOfPersonFinder(PipelineModule):
         path_to_person_image: str,
         matched_person_field_name: str = "matched_person",
         distance_threshold: float = 0.6,
+        max_nof_images: int = None,
         filters: Dict[str, str] = None,
     ):
         self._pre_processor = DeepfacePreprocessor()
@@ -23,6 +24,8 @@ class ImagesOfPersonFinder(PipelineModule):
         self._ground_truth_image = self._load_person_image(path_to_person_image)
         self._matched_person_field_name = matched_person_field_name
         self._distance_threshold = distance_threshold
+        self._max_nof_images = max_nof_images
+        self._found_images = 0
 
     def _load_person_image(self, path_to_person_image: str):
         if path_to_person_image.startswith(
@@ -58,6 +61,9 @@ class ImagesOfPersonFinder(PipelineModule):
                     self._matched_person_field_name,
                     is_person,
                 )
+                self._found_images += 1
+                if self._max_nof_images and self._found_images == self._max_nof_images:
+                    break
             except ValueError as e:
                 # this is a bug in deepface
                 if str(e) == "min() arg is an empty sequence":
