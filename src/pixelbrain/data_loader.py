@@ -13,6 +13,8 @@ import requests
 import copy
 import threading
 import time
+from PIL import Image
+import io
 
 
 class DataLoaderFilter(ABC):
@@ -75,10 +77,10 @@ class DataLoader:
                 if url.startswith("http"):
                     response = requests.get(url)
                     response.raise_for_status()
-                    temp_filename = f'{self._tempdir.name}/{image_idx}.{url.split(".")[-1]}'
-                    with open(temp_filename, "wb") as temp_file:
-                        temp_file.write(response.content)
-                        self._url_cache[url] = temp_file.name
+                    image = Image.open(io.BytesIO(response.content))
+                    temp_filename = f'{self._tempdir.name}/{image_idx}.{image.format.lower()}'
+                    image.save(temp_filename)
+                    self._url_cache[url] = temp_filename
 
         self._url_download_thread = threading.Thread(
             target=download_images, daemon=True
