@@ -47,6 +47,8 @@ class ImagesOfPersonFinder(PipelineModule):
         processed_image_batch: List[Tensor],
     ):
         for image_id, processed_image in zip(image_ids, processed_image_batch):
+            if self._max_nof_images and self._found_images >= self._max_nof_images:
+                break
             try:
                 is_person_dict = DeepFace.verify(
                     img1_path=processed_image.numpy(),
@@ -62,8 +64,6 @@ class ImagesOfPersonFinder(PipelineModule):
                     is_person,
                 )
                 self._found_images += 1
-                if self._max_nof_images and self._found_images == self._max_nof_images:
-                    break
             except ValueError as e:
                 # this is a bug in deepface
                 if str(e) == "min() arg is an empty sequence":
