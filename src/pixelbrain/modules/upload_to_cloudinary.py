@@ -17,6 +17,7 @@ class UploadToCloudinaryModule(PipelineModule):
         dataloader: DataLoader,
         database: Database,
         upload_prefix: str,
+        max_retries: int = 5,
         filters: Union[Dict[str, str], DataLoaderFilter] = None,
     ):
 
@@ -27,16 +28,25 @@ class UploadToCloudinaryModule(PipelineModule):
         )
         self._upload_prefix = upload_prefix
         self._image_idx = 0
+        self._max_retries = max_retries
 
     def _process(self, image_ids: List[str], image_paths: List[str]):
         for image_path in image_paths:
             remote_image_path = f"{self._upload_prefix}/{self._image_idx}"
             self._image_idx += 1
-            cloudinary.uploader.upload(
-                image_path,
-                public_id=remote_image_path,
-                unique_filename=False,
-                overwrite=True,
-            )
+            retry_count = 0
+            while retry_count < self._max_retries:
+                try:
+                    cloudinary.uploader.upload(
+                        image_path,
+                        public_id=remote_image_path,
+                        unique_filename=False,
+                        overwrite=True,
+                    )
+                    break
+                except Exception as e:
+                    retry_count += 1
+                    if retry_count == self._max_retries:
+                        raise e
             image_url = cloudinary.CloudinaryImage(remote_image_path).build_url()
             self._database.add_image(remote_image_path, image_url)
