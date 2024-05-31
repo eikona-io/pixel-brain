@@ -63,7 +63,8 @@ class ImagesOfPersonFinder(PipelineModule):
                     self._matched_person_field_name,
                     is_person,
                 )
-                self._found_images += 1
+                if is_person:
+                    self._found_images += 1
             except ValueError as e:
                 # this is a bug in deepface
                 if str(e) == "min() arg is an empty sequence":
