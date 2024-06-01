@@ -51,9 +51,9 @@ class SSIMDuplicateFilter(PipelineModule):
             self._accepted_images, self._accepted_image_ids
         ):
             if new_image.shape == accepted_image.shape:
-                if (
-                    ssim(new_image.numpy(), accepted_image.numpy(), channel_axis=0)
-                    >= self._ssim_threshold
-                ):
+                ssim_score = ssim(
+                    new_image.numpy(), accepted_image.numpy(), channel_axis=0
+                )
+                if ssim_score >= self._ssim_threshold:
                     return accepted_image_id
         return None
