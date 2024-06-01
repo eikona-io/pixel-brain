@@ -78,8 +78,8 @@ class DataLoader:
                     response = requests.get(url)
                     response.raise_for_status()
                     image = Image.open(io.BytesIO(response.content))
-                    temp_filename = f'{self._tempdir.name}/{image_idx}.{image.format.lower()}'
-                    image.save(temp_filename)
+                    temp_filename = f"{self._tempdir.name}/{image_idx}.jpeg"
+                    image.convert("RGB").save(temp_filename, format="JPEG")
                     self._url_cache[url] = temp_filename
 
         self._url_download_thread = threading.Thread(
@@ -101,7 +101,8 @@ class DataLoader:
         for _ in range(self._batch_size):
             if not self._image_paths:
                 if not image_batch:
-                    # no data left
+                    # no data left, reset so dataloader can be reused
+                    self._reset_image_paths()
                     raise StopIteration
                 break
             image_path = self._pop_image_path()
@@ -120,9 +121,12 @@ class DataLoader:
 
     def _lazy_load_image_paths_if_needed(self):
         if self._image_paths is None:
-            self._image_paths = self._get_all_image_paths()
-            if not self._image_paths:
-                raise ValueError(f"No images found in {self._images_path}")
+            self._reset_image_paths()
+
+    def _reset_image_paths(self):
+        self._image_paths = self._get_all_image_paths()
+        if not self._image_paths:
+            raise ValueError(f"No images found in {self._images_path}")
 
     def __iter__(self):
         return self

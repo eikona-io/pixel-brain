@@ -1,4 +1,6 @@
-from pixelbrain.pipelines.find_images_of_person_pipeline import FindImagesOfPersonPipeline
+from pixelbrain.pipelines.find_images_of_person_pipeline import (
+    FindImagesOfPersonPipeline,
+)
 from os.path import join
 from os import listdir, makedirs
 import tempfile
@@ -7,6 +9,7 @@ from tests.test_utils import TEST_USER_ID, MockCloudinary
 import cloudinary.uploader
 import pytest
 from unittest.mock import patch
+
 
 @pytest.mark.slow_suit
 def test_find_images_of_person_pipeline():
@@ -25,11 +28,11 @@ def test_find_images_of_person_pipeline():
                 "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716945703/user_photos/nightly_202405290121/raw/12.png",
                 "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716945703/user_photos/nightly_202405290121/raw/13.png",
                 "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716945703/user_photos/nightly_202405290121/raw/14.png",
-                "https://res.cloudinary.com/dxgcobmaz/image/upload/v1717055415/user_photos/raw/2514506368613414.jpg"
+                "https://res.cloudinary.com/dxgcobmaz/image/upload/v1717055415/user_photos/raw/2514506368613414.jpg",
             ]
             distance_threshold = 0.6
             max_results = 30
-            
+
             pipeline = FindImagesOfPersonPipeline(
                 person_image_path,
                 raw_images_path_or_paths,
@@ -45,4 +48,6 @@ def test_find_images_of_person_pipeline():
                 for file in listdir(processed_photos_dir)
                 if not file.startswith(".")
             ]
-            assert len(processed_files) == 5, "5 images should be processed and uploaded"
+            assert (
+                len(processed_files) == 4
+            ), "5 images should be processed and uploaded (10 is a dup of 14 and last one is not the person)"
