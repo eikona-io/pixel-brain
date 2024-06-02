@@ -122,10 +122,10 @@ class FaceExtractorModule(PipelineModule):
             else os.path.dirname(image_path)
         )
         image_filename = os.path.basename(image_path).split(".")[0]
-        face_path = f"{image_dir}/{image_filename}_face{idx}.png"
+        face_path = f"{image_dir}/{image_filename}_face{idx}.jpg"
 
         extracted_face_pil = Image.fromarray(extracted_face.astype("uint8"), "RGB")
-        extracted_face_pil.save(face_path)
+        extracted_face_pil.save(face_path, format='JPEG')
         return face_path
 
     def _get_face_frame(
