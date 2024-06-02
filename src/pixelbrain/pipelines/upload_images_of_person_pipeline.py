@@ -76,10 +76,16 @@ class UploadImagesOfPersonPipeline(TaggingPipeline):
                     upload_dataloader,
                     self._database,
                     upload_prefix=upload_prefix,
-                    filters={
-                        self._matched_person_field: True,
-                        ssim_is_duplicate_field: False,
-                    },
+                    filters=(
+                        {
+                            self._matched_person_field: True,
+                            ssim_is_duplicate_field: False,
+                        }
+                        if person_image_path
+                        else {
+                            ssim_is_duplicate_field: False,
+                        }
+                    ),
                 ),
             ]
         )

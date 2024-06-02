@@ -11,7 +11,7 @@ import pytest
 from unittest.mock import patch
 
 
-def upload_images_of_person_pipelinerun_(person_image_path=None):
+def upload_images_of_person_pipelinerun_(person_image_path=None, nof_expected_files=4):
     local_temp_database = Database()
     with patch.object(cloudinary.uploader, "upload", MockCloudinary.uploader.upload):
         with tempfile.TemporaryDirectory() as tempdir:
@@ -48,17 +48,18 @@ def upload_images_of_person_pipelinerun_(person_image_path=None):
                 if not file.startswith(".")
             ]
             assert (
-                len(processed_files) == 4 if person_image_path else 6
-            ), "4 or 6 images should be processed and uploaded (10 is a dup of 14 and last one is not the person)"
+                len(processed_files) == nof_expected_files
+            ), f"{nof_expected_files} images should be processed and uploaded (10 is a dup of 14 and last one is not the person)"
 
 
 @pytest.mark.slow_suit
 def test_upload_images_of_person_pipeline_with_person_image():
     upload_images_of_person_pipelinerun_(
-        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716945703/user_photos/nightly_202405290121/raw/9.png"
+        "https://res.cloudinary.com/dxgcobmaz/image/upload/v1716945703/user_photos/nightly_202405290121/raw/9.png",
+        4,
     )
 
 
 @pytest.mark.slow_suit
 def test_upload_images_of_person_pipeline_without_person_image():
-    upload_images_of_person_pipelinerun_()
+    upload_images_of_person_pipelinerun_(nof_expected_files=5)
