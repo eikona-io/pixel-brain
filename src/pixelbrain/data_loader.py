@@ -78,8 +78,8 @@ class DataLoader:
                     response = requests.get(url)
                     response.raise_for_status()
                     image = Image.open(io.BytesIO(response.content))
-                    temp_filename = f"{self._tempdir.name}/{image_idx}.jpeg"
-                    image.convert("RGB").save(temp_filename, format="JPEG")
+                    temp_filename = f"{self._tempdir.name}/{image_idx}.{image.format.lower()}"
+                    image.convert("RGB").save(temp_filename)
                     self._url_cache[url] = temp_filename
 
         self._url_download_thread = threading.Thread(

@@ -40,6 +40,7 @@ def test_find_images_of_person_pipeline():
                 upload_prefix,
                 distance_threshold,
                 max_results,
+                ssim_threshold=0.45
             )
             pipeline.process()
 

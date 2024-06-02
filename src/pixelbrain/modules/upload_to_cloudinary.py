@@ -42,6 +42,7 @@ class UploadToCloudinaryModule(PipelineModule):
                         public_id=remote_image_path,
                         unique_filename=False,
                         overwrite=True,
+                        format="jpg",
                     )
                     break
                 except Exception as e:
