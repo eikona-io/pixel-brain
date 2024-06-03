@@ -32,7 +32,7 @@ class FaceExtractorModule(PipelineModule):
         clone_original_image_metadata=True,
         increase_face_ratio: float = 2.5,
         store_in_db: bool = True,
-        minimal_face_size: int = 200 * 240,
+        minimal_face_size: int = 200 * 300,
     ):
         """
         Initialize the FaceExtractorModule.
