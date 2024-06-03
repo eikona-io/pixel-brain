@@ -27,6 +27,20 @@ def test_store_field_remote():
     store_field_run(MONGODB_ATLAS_KEY)
 
 
+async def store_field_run_async(mongo_key=None):
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
+    with DeleteDatabaseAfterTest(db):
+        await db.async_add_image("test_id", "test_image_path")
+        await db.async_store_field("test_id", "test_field", "test_value")
+        result = await db.async_find_image("test_id")
+        assert result["test_field"] == "test_value"
+
+
+@pytest.mark.asyncio
+async def test_store_field_remote_async():
+    await store_field_run_async(MONGODB_ATLAS_KEY)
+
+
 def store_field_error_run(mongo_key=None):
     db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
     with DeleteDatabaseAfterTest(db):
@@ -57,6 +71,20 @@ def test_find_image_local():
 
 def test_find_image_remote():
     find_image_run(MONGODB_ATLAS_KEY)
+
+
+async def find_image_run_async(mongo_key=None):
+    db = Database(mongo_key=mongo_key, database_id=uuid4().hex)
+    with DeleteDatabaseAfterTest(db):
+        await db.async_add_image("test_id", "test_image_path")
+        await db.async_store_field("test_id", "test_field", "test_value")
+        result = await db.async_find_image("test_id")
+        assert result["_id"] == "test_id"
+
+
+@pytest.mark.asyncio
+async def test_find_image_remote_async():
+    await find_image_run_async(MONGODB_ATLAS_KEY)
 
 
 def find_image_error_run(mongo_key=None):
@@ -359,7 +387,9 @@ def test_find_images_with_fields():
         mock_db.store_field("img4", "field3", "value3")
 
         # Test the find_images_with_fields method
-        result = mock_db.find_images_with_filters({"field1": "value1", "field2": "value2"})
+        result = mock_db.find_images_with_filters(
+            {"field1": "value1", "field2": "value2"}
+        )
         assert len(result) == 2, "Should return two images"
         assert any(
             img["_id"] == "img1" for img in result

@@ -12,6 +12,7 @@ from tqdm import tqdm
 from pinecone import Pinecone, Index
 import pandas as pd
 from uuid import uuid4
+from motor.motor_asyncio import AsyncIOMotorClient
 
 IN_VECTOR_STORE_STR = "IN_VECTOR_STORE"
 
@@ -39,6 +40,7 @@ class Database:
             database_id = uuid4().hex[:8]
         if mongo_key:
             self._db = MongoClient(mongo_key)[database_id]
+            self._async_db = AsyncIOMotorClient(mongo_key)[database_id]
             self._local_montydb_path = None
         else:
             # runs an bson(binary-json) mongo compatible client
@@ -72,6 +74,22 @@ class Database:
             {"_id": image_id}, {"$set": {"image_path": image_path}}, upsert=True
         )
 
+    async def async_add_image(self, image_id: str, image_path: str):
+        """
+        Asynchronously add an image to the database
+        :param image_id (str): image unique identifier
+        :param image_path (str): image path (can be remote storage)
+        """
+        if isinstance(self._db, MontyClient):
+            raise RuntimeError("Async operations are not supported for local MontyDB")
+        if await self._async_db.images.find_one({"_id": image_id}):
+            # already have this image
+            return
+
+        _ = await self._async_db.images.update_one(
+            {"_id": image_id}, {"$set": {"image_path": image_path}}, upsert=True
+        )
+
     def store_field(
         self,
         image_id: str,
@@ -95,6 +113,33 @@ class Database:
 
         else:
             _ = self._db.images.update_one(
+                {"_id": image_id}, {"$set": {field_name: field_value}}, upsert=True
+            )
+
+    async def async_store_field(
+        self,
+        image_id: str,
+        field_name: Union[str, int, float],
+        field_value: Union[str, np.ndarray],
+    ):
+        """
+        Asynchronously store a field in the database.
+
+        :param image_id: The ID of the image.
+        :param field_name: The name of the field to store.
+        :param field_value: The value of the field to store.
+        """
+        if isinstance(self._db, MontyClient):
+            raise RuntimeError("Async operations are not supported for local MontyDB")
+
+        if not await self._async_db.images.find_one({"_id": image_id}):
+            raise ValueError(f"Image ID {image_id} does not exist in the database")
+
+        if isinstance(field_value, np.ndarray):
+            raise NotImplementedError("Async vector storage is not implemented")
+
+        else:
+            await self._async_db.images.update_one(
                 {"_id": image_id}, {"$set": {field_name: field_value}}, upsert=True
             )
 
@@ -194,6 +239,17 @@ class Database:
         """
         return self._db.images.find_one({"_id": image_id})
 
+    async def async_find_image(self, image_id: str) -> dict:
+        """
+        Asynchronously find an image in the database.
+
+        :param image_id: The ID of the image to find.
+        :return: The image document.
+        """
+        if isinstance(self._db, MontyClient):
+            raise RuntimeError("Async operations are not supported for local MontyDB")
+        return await self._async_db.images.find_one({"_id": image_id})
+
     def get_all_images(self) -> list:
         """
         Retrieve all images from the database.
@@ -281,7 +337,10 @@ class Database:
         :param filters: A list of filters to apply to the image documents.
         :return: A list of all image documents that have all the specified fields.
         """
-        query = {field_name: value if value is not None else {"$exists": True} for field_name, value in filters.items()}
+        query = {
+            field_name: value if value is not None else {"$exists": True}
+            for field_name, value in filters.items()
+        }
         return list(self._db.images.find(query))
 
     def aggregate_on_field(
