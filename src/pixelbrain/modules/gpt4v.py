@@ -155,7 +155,11 @@ class Gpt4VModule(PipelineModule):
                     tasks.append(task)
                 responses = await asyncio.gather(*tasks)
                 for response in responses:
-                    result = response["choices"][0]["message"]["content"]
+                    result = (
+                        response["choices"][0]["message"]["content"]
+                        if response
+                        else None
+                    )
                     gpt_results.append(result)
 
         # Run the asynchronous process_images function in the event loop
@@ -182,7 +186,8 @@ class Gpt4VModule(PipelineModule):
         """
         gpt_results = self._post_process_answers(gpt_results)
         for image_id, result in zip(image_ids, gpt_results):
-            self._database.store_field(image_id, self._metadata_field_name, result)
+            if result is not None:  # skip failed results
+                self._database.store_field(image_id, self._metadata_field_name, result)
 
 
 class GPT4VPeopleDetectorModule(Gpt4VModule):
