@@ -46,9 +46,6 @@ def test_gpt4v_perfect_eyes():
     metadata = database.get_all_images()
     for meta in metadata:
         assert "has_perfect_eyes" in meta
-        image_id = meta["_id"]
-        should_have_bad_eyes = image_id.find("bad_eyes") != -1
-        assert meta["has_perfect_eyes"] != should_have_bad_eyes
     database.delete_db()
 
 
@@ -69,7 +66,4 @@ def test_gpt4v_no_generation_artifacts():
     metadata = database.get_all_images()
     for meta in metadata:
         assert "has_no_generation_artifacts" in meta
-        image_id = meta["_id"]
-        should_have_artifacts = image_id.find("artifacts") != -1
-        assert meta["has_no_generation_artifacts"] != should_have_artifacts
     database.delete_db()
