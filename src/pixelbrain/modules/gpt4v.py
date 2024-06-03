@@ -65,7 +65,13 @@ class Gpt4VModule(PipelineModule):
         :return: Payload dictionary
         """
 
-        base64_image = base64.b64encode(image.numpy()).decode("utf-8")
+        if isinstance(image, torch.Tensor):
+            base64_image = base64.b64encode(image.numpy()).decode("utf-8")
+            url = f"data:image/jpeg;base64,{base64_image}"
+        else:
+            if not image.startswith("http"):
+                raise ValueError("Image must be a URL or a base64 encoded string")
+            url = image
         payload = {
             "model": "gpt-4o-2024-05-13",
             "messages": [
@@ -76,7 +82,7 @@ class Gpt4VModule(PipelineModule):
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}",
+                                "url": url,
                                 "detail": f"{self._detail}",
                             },
                         },
