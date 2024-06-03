@@ -1,6 +1,6 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
-from pixelbrain.modules.gpt4v import GPT4VPeopleDetectorModule
+from pixelbrain.modules.gpt4v import GPT4VPeopleDetectorModule, GPT4VPerfectEyesModule
 from pixelbrain.utils import PIXELBRAIN_PATH
 
 
@@ -23,3 +23,25 @@ def test_gpt4v_people_detector():
     for meta in metadata:
         assert "is_person" in meta
     database.delete_db()
+
+
+def test_gpt4v_perfect_eyes():
+    database = Database()
+    # test only one image to save cost
+    data = DataLoader(
+        f"{PIXELBRAIN_PATH}/src/tests/test_gpt4v_data/",
+        database,
+        decode_images=False,
+        batch_size=2,
+    )
+    module = GPT4VPerfectEyesModule(
+        data, database, metadata_field_name="has_perfect_eyes"
+    )
+    module.process()
+
+    metadata = database.get_all_images()
+    for meta in metadata:
+        assert "has_perfect_eyes" in meta
+    database.delete_db()
+
+test_gpt4v_perfect_eyes()
