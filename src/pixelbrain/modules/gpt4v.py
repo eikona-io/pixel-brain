@@ -1,14 +1,13 @@
 import base64
-import requests
 from pixelbrain.pipeline import PipelineModule
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from typing import List, Dict
 import torch
-import logging
 from pixelbrain.utils import OPENAI_KEY, get_logger
 import asyncio
 import aiohttp  # Import aiohttp for asynchronous HTTP requests
+import tenacity
 
 logger = get_logger(__name__)
 
@@ -26,6 +25,9 @@ class Gpt4VModule(PipelineModule):
         metadata_field_name: str,
         filters: Dict[str, str] = None,
         high_detail=False,
+        max_retries=10,
+        wait_exponential_multiplier=1,
+        wait_exponential_max=10,
     ):
         """
         Initialize the Gpt4vModule.
@@ -44,6 +46,9 @@ class Gpt4VModule(PipelineModule):
         self._api_key = OPENAI_KEY
         self._headers = self._init_openai_headers()
         self._detail = "high" if high_detail else "low"
+        self._max_retries = max_retries
+        self._wait_exponential_multiplier = wait_exponential_multiplier
+        self._wait_exponential_max = wait_exponential_max
 
     def _init_openai_headers(self):
         """
@@ -96,19 +101,40 @@ class Gpt4VModule(PipelineModule):
         """
         Helper function to perform asynchronous HTTP POST request.
         """
-        while True:
+
+        @tenacity.retry(
+            stop=tenacity.stop_after_attempt(self._max_retries),
+            wait=tenacity.wait_exponential(
+                multiplier=self._wait_exponential_multiplier,
+                max=self._wait_exponential_max,
+            ),
+        )
+        async def make_request():
             async with session.post(
                 "https://api.openai.com/v1/chat/completions",
                 json=payload,
                 headers=self._headers,
             ) as response:
-                if response.status != 200:
-                    response_json = await response.json()
-                    logger.info(
-                        f"Got a {response.status} for gpt4v api, response: {response_json}"
-                    )
+                content_type = response.headers.get("Content-Type", "")
+                if "application/json" in content_type:
+                    try:
+                        json_data = await response.json()
+                        if "error" in json_data:
+                            raise RuntimeError(json_data["error"])
+                        return json_data
+                    except Exception as e:
+                        logger.error(f"Failed to parse JSON response: {e}")
+                        raise
                 else:
-                    return await response.json()
+                    text_data = await response.text()
+                    logger.info(f"Response is not JSON, received text data.")
+                    return text_data
+
+        try:
+            return await make_request()
+        except Exception as e:
+            logger.error(f"All retries failed: {e}")
+            return None
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
