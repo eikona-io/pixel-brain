@@ -7,7 +7,8 @@ from typing import List, Dict
 import torch
 import logging
 from pixelbrain.utils import OPENAI_KEY, get_logger
-
+import asyncio
+import aiohttp  # Import aiohttp for asynchronous HTTP requests
 
 logger = get_logger(__name__)
 
@@ -17,7 +18,7 @@ class Gpt4VModule(PipelineModule):
     """
     def __init__(self, data: DataLoader, 
                  database: Database, 
-                 question: str, 
+                 question: str,
                  metadata_field_name: str,
                  filters: Dict[str, str] = None,
                  high_detail=False):
@@ -61,7 +62,7 @@ class Gpt4VModule(PipelineModule):
         
         base64_image = base64.b64encode(image.numpy()).decode('utf-8')
         payload = {
-            "model": "gpt-4-vision-preview",
+            "model": "gpt-4o-2024-05-13",
             "messages": [
                 {
                     "role": "user",
@@ -83,25 +84,43 @@ class Gpt4VModule(PipelineModule):
         }
         return payload
 
+    async def _async_request(self, session, payload):
+        """
+        Helper function to perform asynchronous HTTP POST request.
+        """
+        while True:
+            async with session.post("https://api.openai.com/v1/chat/completions", json=payload, headers=self._headers) as response:
+                if response.status != 200:
+                    response_json = await response.json()
+                    logger.info(f"Got a {response.status} for gpt4v api, response: {response_json}")
+                else:
+                    return await response.json()
+
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
-        Process the images with GPT-4 Vision and return the results.
+        Process the images with GPT-4 Vision and return the results synchronously using asynchronous internals.
         
         :param image_ids: List of image ids
         :param processed_image_batch: Batch of preprocessed images
         :return: List of image ids and GPT-4 Vision results
         """
         gpt_results = []
-        for image in processed_image_batch:
-            payload = self._generate_payload(image)
-            while True:
-                response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=self._headers)
-                if response.status_code != 200:
-                    logger.info(f"Got a {response.status_code} for gpt4v api, response: {response.json()}")
-                else:
-                    break
-            result = response.json()['choices'][0]['message']['content']
-            gpt_results.append(result)
+
+        async def process_images():
+            async with aiohttp.ClientSession() as session:
+                tasks = []
+                for image in processed_image_batch:
+                    payload = self._generate_payload(image)
+                    task = asyncio.create_task(self._async_request(session, payload))
+                    tasks.append(task)
+                responses = await asyncio.gather(*tasks)
+                for response in responses:
+                    result = response['choices'][0]['message']['content']
+                    gpt_results.append(result)
+
+        # Run the asynchronous process_images function in the event loop
+        asyncio.run(process_images())
+
         return image_ids, gpt_results
 
     def _post_process_answers(self, gpt_results: List[str]):
