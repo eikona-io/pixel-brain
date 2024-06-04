@@ -3,6 +3,10 @@ from typing import List, Dict
 from pixelbrain.pipeline import PipelineModule, Database, DataLoader
 import torch
 from pixelbrain.pre_processors.ssim import SSIMPreprocessor
+from pixelbrain.utils import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class SSIMDuplicateFilter(PipelineModule):
@@ -45,6 +49,7 @@ class SSIMDuplicateFilter(PipelineModule):
                 self._database.store_field(
                     image_id, self._duplicate_of_field_name, duplicate_of
                 )
+        logger.info(f"SSIM: Removed {len(image_ids) - len(self._accepted_image_ids)} images, out of {len(image_ids)} given images")
 
     def _is_duplicate(self, new_image: torch.Tensor) -> str:
         for accepted_image, accepted_image_id in zip(
