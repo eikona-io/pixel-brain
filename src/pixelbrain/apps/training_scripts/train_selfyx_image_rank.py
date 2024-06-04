@@ -22,12 +22,17 @@ def train_selfyx_image_rank():
         "similarity_score_maximum_distance",
         "generated_epoch",
         "prompt_name",
+        "has_perfect_eyes",
+        "has_no_generation_artifacts",
     ]
 
     metric_field_name = "human_rating"
     group_by_field_name = "session_id"
     filters = {field_name: None for field_name in data_field_names}
     filters[metric_field_name] = {"$gt": 0}
+    # some values are None (if processing in gpt failed)
+    filters["has_perfect_eyes"] = {"$in": [True, False]}
+    filters["has_no_generation_artifacts"] = {"$in": [True, False]}
     data = db.find_images_with_filters(filters)
     staging_data = staging_db.find_images_with_filters(filters)
     data_df = pd.DataFrame(data + staging_data)
@@ -43,6 +48,11 @@ def train_selfyx_image_rank():
     )  # for use during inference
     data_df["prompt_name"] = data_df["prompt_name_cat"]
 
+    # transform boolean features to ints
+    data_df["has_perfect_eyes"] = data_df["has_perfect_eyes"].astype(int)
+    data_df["has_no_generation_artifacts"] = data_df[
+        "has_no_generation_artifacts"
+    ].astype(int)
     current_date = datetime.now().strftime("%Y-%m-%d-%H-%M")
     run_name = f"selfyx-image-ranker-{current_date}"
 
