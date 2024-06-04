@@ -36,13 +36,14 @@ class CloudinaryDataLoader(DataLoader):
         database: Database,
         batch_size: int = 1,
         is_recursive: bool = False,
+        load_images: bool = True,
     ):
         super().__init__(
             images_path=cloudinary_folder_prefix_or_public_ids,
             database=database,
             batch_size=batch_size,
             decode_images=True,
-            load_images=True,
+            load_images=load_images,
             is_recursive=is_recursive,
         )
         self._logger = get_logger("CloudinaryDataLoader")
