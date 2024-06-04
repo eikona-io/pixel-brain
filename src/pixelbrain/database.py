@@ -49,6 +49,7 @@ class Database:
             self._db = MontyClient(f"montydb:///{self._local_montydb_path}")[
                 database_id
             ]
+            self._async_db = None
         if pinecone_vector_key:
             # TODO: omerh -> change to creating a new index once we move out of free version
             self._vector_db = Pinecone(pinecone_vector_key).Index(database_id)
@@ -142,6 +143,9 @@ class Database:
             await self._async_db.images.update_one(
                 {"_id": image_id}, {"$set": {field_name: field_value}}, upsert=True
             )
+
+    def is_async(self):
+        return self._async_db is not None
 
     def _store_vector(self, image_id: str, field_name: str, embedding: np.ndarray):
         index_fqn = f"{self._db_id}-{field_name}"

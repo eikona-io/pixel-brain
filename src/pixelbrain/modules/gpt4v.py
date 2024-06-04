@@ -97,9 +97,9 @@ class Gpt4VModule(PipelineModule):
         }
         return payload
 
-    async def _async_request(self, session, payload):
+    async def _async_gpt_process_and_store(self, session, payload, image_id):
         """
-        Helper function to perform asynchronous HTTP POST request.
+        Helper function to perform asynchronous HTTP POST requests.
         """
 
         @tenacity.retry(
@@ -121,7 +121,21 @@ class Gpt4VModule(PipelineModule):
                         json_data = await response.json()
                         if "error" in json_data:
                             raise RuntimeError(json_data["error"])
-                        return json_data
+                        try:
+                            result = json_data["choices"][0]["message"]["content"]
+                            parsed_result = self._post_process_answers([result])
+                            if self._database.is_async():
+                                await self._database.async_store_field(
+                                    image_id, self._metadata_field_name, parsed_result
+                                )
+                            else:
+                                self._database.store_field(
+                                    image_id, self._metadata_field_name, parsed_result
+                                )
+                            return parsed_result
+                        except Exception as e:
+                            logger.error(f"Failed to extract JSON data: {e}")
+                            raise
                     except Exception as e:
                         logger.error(f"Failed to parse JSON response: {e}")
                         raise
@@ -133,7 +147,7 @@ class Gpt4VModule(PipelineModule):
         try:
             return await make_request()
         except Exception as e:
-            logger.error(f"All retries failed: {e}")
+            logger.error(f"All retries failed for image: {image_id}, error: {e}")
             return None
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
@@ -146,26 +160,28 @@ class Gpt4VModule(PipelineModule):
         """
         gpt_results = []
 
-        async def process_images():
+        async def process_image_batch():
             async with aiohttp.ClientSession() as session:
                 tasks = []
-                for image in processed_image_batch:
+                for image_id, image in zip(image_ids, processed_image_batch):
                     payload = self._generate_payload(image)
-                    task = asyncio.create_task(self._async_request(session, payload))
+                    task = asyncio.create_task(
+                        self._async_gpt_process_and_store(session, payload, image_id)
+                    )
                     tasks.append(task)
                 responses = await asyncio.gather(*tasks)
                 for response in responses:
-                    result = (
-                        response["choices"][0]["message"]["content"]
-                        if response
-                        else None
-                    )
-                    gpt_results.append(result)
+                    gpt_results.append(response)
 
-        # Run the asynchronous process_images function in the event loop
-        asyncio.run(process_images())
-
+        self._run_in_event_loop(process_image_batch())
         return image_ids, gpt_results
+
+    def _run_in_event_loop(self, func):
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.run_until_complete(func)
 
     def _post_process_answers(self, gpt_results: List[str]):
         """
@@ -176,18 +192,6 @@ class Gpt4VModule(PipelineModule):
         :return: Post-processed results
         """
         return gpt_results
-
-    def _post_process_batch(self, image_ids: List[str], gpt_results: List[str]):
-        """
-        Post-process the batch of GPT-4 Vision results and store them in the database.
-
-        :param image_ids: List of image ids
-        :param gpt_results: List of GPT-4 Vision results
-        """
-        gpt_results = self._post_process_answers(gpt_results)
-        for image_id, result in zip(image_ids, gpt_results):
-            if result is not None:  # skip failed results
-                self._database.store_field(image_id, self._metadata_field_name, result)
 
 
 class GPT4VPeopleDetectorModule(Gpt4VModule):
