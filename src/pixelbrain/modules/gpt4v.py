@@ -150,7 +150,9 @@ class Gpt4VModule(PipelineModule):
             logger.error(f"All retries failed for image: {image_id}, error: {e}")
             return None
 
-    def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
+    async def _process_image_batch(
+        self, image_ids: List[str], processed_image_batch: List[torch.Tensor]
+    ):
         """
         Process the images with GPT-4 Vision and return the results synchronously using asynchronous internals.
 
@@ -159,27 +161,53 @@ class Gpt4VModule(PipelineModule):
         :return: List of image ids and GPT-4 Vision results
         """
         gpt_results = []
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for image_id, image in zip(image_ids, processed_image_batch):
+                payload = self._generate_payload(image)
+                task = asyncio.create_task(
+                    self._async_gpt_process_and_store(session, payload, image_id)
+                )
+                tasks.append(task)
+            responses = await asyncio.gather(*tasks)
+            for response in responses:
+                gpt_results.append(response)
+        return image_ids, gpt_results
 
-        async def process_image_batch():
-            async with aiohttp.ClientSession() as session:
-                tasks = []
-                for image_id, image in zip(image_ids, processed_image_batch):
-                    payload = self._generate_payload(image)
-                    task = asyncio.create_task(
-                        self._async_gpt_process_and_store(session, payload, image_id)
-                    )
-                    tasks.append(task)
-                responses = await asyncio.gather(*tasks)
-                for response in responses:
-                    gpt_results.append(response)
+    def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
+        """
+        Process the images with GPT-4 Vision and return the results synchronously using asynchronous internals.
 
-        self._run_in_event_loop(process_image_batch())
+        :param image_ids: List of image ids
+        :param processed_image_batch: Batch of preprocessed images
+        :return: List of image ids and GPT-4 Vision results
+        """
+
+        gpt_results = self._run_in_event_loop(
+            self._process_image_batch(image_ids, processed_image_batch)
+        )
+        return image_ids, gpt_results
+
+    async def _async_process(
+        self, image_ids: List[str], processed_image_batch: List[torch.Tensor]
+    ):
+        """
+        Process the images with GPT-4 Vision and return the results synchronously using asynchronous internals.
+
+        :param image_ids: List of image ids
+        :param processed_image_batch: Batch of preprocessed images
+        :return: List of image ids and GPT-4 Vision results
+        """
+
+        gpt_results = await self._process_image_batch(image_ids, processed_image_batch)
         return image_ids, gpt_results
 
     def _run_in_event_loop(self, func):
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            asyncio.run_coroutine_threadsafe(func, loop).result()
+            raise RuntimeError(
+                "To run the module in an already running event loop, use the async version of the process method"
+            )
         else:
             if loop.is_closed():
                 loop = asyncio.new_event_loop()

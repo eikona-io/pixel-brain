@@ -6,6 +6,7 @@ from pixelbrain.modules.gpt4v import (
     GPT4VNoGenerationArtifactsModule,
 )
 from pixelbrain.utils import PIXELBRAIN_PATH
+import pytest
 
 
 def test_gpt4v_people_detector():
@@ -62,6 +63,27 @@ def test_gpt4v_no_generation_artifacts():
         data, database, metadata_field_name="has_no_generation_artifacts"
     )
     module.process()
+
+    metadata = database.get_all_images()
+    for meta in metadata:
+        assert "has_no_generation_artifacts" in meta
+    database.delete_db()
+
+
+@pytest.mark.asyncio
+async def test_gpt4v_no_generation_artifacts_async():
+    database = Database()
+    # test only one image to save cost
+    data = DataLoader(
+        f"{PIXELBRAIN_PATH}/src/tests/test_gpt4v_data/",
+        database,
+        decode_images=False,
+        batch_size=3,
+    )
+    module = GPT4VNoGenerationArtifactsModule(
+        data, database, metadata_field_name="has_no_generation_artifacts"
+    )
+    await module.async_process()
 
     metadata = database.get_all_images()
     for meta in metadata:

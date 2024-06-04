@@ -34,6 +34,12 @@ class DataProcessor(ABC):
     def process(self):
         pass
 
+    async def async_process(self):
+        """
+        Optional Async version of the process method.
+        """
+        pass
+
 
 class PipelineModule(DataProcessor):
     """
@@ -86,6 +92,29 @@ class PipelineModule(DataProcessor):
         self._post_process(*args, **kwargs)
         self._processed_called = True
 
+    @overrides
+    async def async_process(self, *args, **kwargs):
+        """
+        Async process the data and store tags.
+        """
+
+        if self._processed_called:
+            raise RuntimeError(
+                "A PipelineModule process() function can only be called once and then it should be discarded."
+            )
+
+        if self._filters is not None:
+            self._apply_filters()
+        for image_ids, image_batch in tqdm(self._data, desc=self.__class__.__name__):
+            if self._pre_processor is not None:
+                image_batch = self._pre_processor(image_batch)
+            batch_results = await self._async_process(image_ids, image_batch)
+            if batch_results is not None:
+                self._post_process_batch(*batch_results, *args, **kwargs)
+
+        self._post_process(*args, **kwargs)
+        self._processed_called = True
+
     @abstractmethod
     def _process(
         self,
@@ -94,6 +123,19 @@ class PipelineModule(DataProcessor):
     ):
         """
         Abstract method to be implemented by subclasses for processing data.
+
+        :param image_ids: Tuple of image ids
+        :param processed_image_batch: Batch of preprocessed images
+        """
+        pass
+
+    async def _async_process(
+        self,
+        image_ids: List[str],
+        processed_image_batch: Union[torch.Tensor, List[torch.Tensor], List[str]],
+    ):
+        """
+        Optional async version of the _process method.
 
         :param image_ids: Tuple of image ids
         :param processed_image_batch: Batch of preprocessed images
