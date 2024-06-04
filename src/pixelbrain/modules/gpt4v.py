@@ -178,10 +178,13 @@ class Gpt4VModule(PipelineModule):
 
     def _run_in_event_loop(self, func):
         loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        loop.run_until_complete(func)
+        if loop.is_running():
+            asyncio.run_coroutine_threadsafe(func, loop).result()
+        else:
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            loop.run_until_complete(func)
 
     def _post_process_answers(self, gpt_results: List[str]):
         """
