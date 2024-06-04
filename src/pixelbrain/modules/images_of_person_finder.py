@@ -6,6 +6,10 @@ from torchvision.io import read_image, ImageReadMode
 from torch import Tensor
 from deepface import DeepFace
 import tempfile
+from pixelbrain.utils import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class ImagesOfPersonFinder(PipelineModule):
@@ -75,3 +79,4 @@ class ImagesOfPersonFinder(PipelineModule):
                     )
                 else:
                     raise
+        logger.info(f"Face Similarity: Found {self._found_images} images of the person, out of {len(image_ids)} given images")
