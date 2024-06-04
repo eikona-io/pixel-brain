@@ -123,7 +123,7 @@ class Gpt4VModule(PipelineModule):
                             raise RuntimeError(json_data["error"])
                         try:
                             result = json_data["choices"][0]["message"]["content"]
-                            parsed_result = self._post_process_answers([result])
+                            parsed_result = self._post_process_answers([result])[0]
                             if self._database.is_async():
                                 await self._database.async_store_field(
                                     image_id, self._metadata_field_name, parsed_result
