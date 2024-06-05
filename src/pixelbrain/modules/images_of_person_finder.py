@@ -7,7 +7,8 @@ from torch import Tensor
 from deepface import DeepFace
 import tempfile
 from pixelbrain.utils import get_logger
-
+import io
+from PIL import ImageOps, Image
 
 logger = get_logger(__name__)
 
@@ -36,9 +37,13 @@ class ImagesOfPersonFinder(PipelineModule):
             "http://"
         ) or path_to_person_image.startswith("https://"):
             with tempfile.NamedTemporaryFile(delete=True, suffix=".jpg") as temp_file:
-                temp_file.write(requests.get(path_to_person_image).content)
-                response = temp_file.name
-                image = read_image(response, mode=ImageReadMode.RGB)
+                img_pil = Image.open(
+                    io.BytesIO(requests.get(path_to_person_image).content)
+                )
+                img_pil = ImageOps.exif_transpose(img_pil)  # important!!
+                img_pil.save(temp_file.name)
+                temp_filename = temp_file.name
+                image = read_image(temp_filename, mode=ImageReadMode.RGB)
         else:
             image = read_image(path_to_person_image, mode=ImageReadMode.RGB)
 
@@ -50,6 +55,8 @@ class ImagesOfPersonFinder(PipelineModule):
         image_ids: List[str],
         processed_image_batch: List[Tensor],
     ):
+        from PIL import Image
+
         for image_id, processed_image in zip(image_ids, processed_image_batch):
             if self._max_nof_images and self._found_images >= self._max_nof_images:
                 break
@@ -79,4 +86,6 @@ class ImagesOfPersonFinder(PipelineModule):
                     )
                 else:
                     raise
-        logger.info(f"Face Similarity: Found {self._found_images} images of the person, out of {len(image_ids)} given images")
+        logger.info(
+            f"Face Similarity: Found {self._found_images} images of the person, out of {len(image_ids)} given images"
+        )
