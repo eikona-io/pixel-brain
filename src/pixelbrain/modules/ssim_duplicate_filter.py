@@ -34,9 +34,11 @@ class SSIMDuplicateFilter(PipelineModule):
         image_ids: List[str],
         processed_image_batch: List[torch.Tensor],
     ):
+        accepted_images = 0
         for image_id, processed_image in zip(image_ids, processed_image_batch):
             duplicate_of = self._is_duplicate(processed_image)
             if duplicate_of is None:
+                accepted_images += 1
                 self._accepted_images.append(processed_image)
                 self._accepted_image_ids.append(image_id)
                 self._database.store_field(
@@ -49,7 +51,7 @@ class SSIMDuplicateFilter(PipelineModule):
                 self._database.store_field(
                     image_id, self._duplicate_of_field_name, duplicate_of
                 )
-        logger.info(f"SSIM: Removed {len(image_ids) - len(self._accepted_image_ids)} images, out of {len(image_ids)} given images")
+        logger.info(f"SSIM: Approved {accepted_images} images, out of {len(image_ids)} given images")
 
     def _is_duplicate(self, new_image: torch.Tensor) -> str:
         for accepted_image, accepted_image_id in zip(
