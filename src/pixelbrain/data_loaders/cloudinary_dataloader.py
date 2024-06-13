@@ -1,6 +1,6 @@
 from cloudinary.exceptions import AuthorizationRequired
 import torchvision.transforms as transforms
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.database import Database
 from overrides import overrides
@@ -37,6 +37,7 @@ class CloudinaryDataLoader(DataLoader):
         batch_size: int = 1,
         is_recursive: bool = False,
         load_images: bool = True,
+        image_transformations: Optional[Dict[str, str]] = None,
     ):
         super().__init__(
             images_path=cloudinary_folder_prefix_or_public_ids,
@@ -55,6 +56,7 @@ class CloudinaryDataLoader(DataLoader):
                 "Cloudinary credentials not found. Please set them as environment variables."
             )
         self.test_cloudinary_connection()
+        self._image_transformations = image_transformations
 
     @overrides
     def __next__(self) -> Tuple[List[str], List[torch.Tensor]]:
@@ -73,7 +75,7 @@ class CloudinaryDataLoader(DataLoader):
                     raise StopIteration
                 break
             image_public_id = self._image_paths.pop(0)
-            image_url = cloudinary.CloudinaryImage(image_public_id).build_url()
+            image_url = cloudinary.CloudinaryImage(image_public_id).build_url(**self._image_transformations)
             self._database.add_image(image_public_id, image_url)
             image = self._load_image(image_url) if self._load_images else image_url
             image_batch.append(image)
