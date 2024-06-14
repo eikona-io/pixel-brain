@@ -75,7 +75,10 @@ class CloudinaryDataLoader(DataLoader):
                     raise StopIteration
                 break
             image_public_id = self._image_paths.pop(0)
-            image_url = cloudinary.CloudinaryImage(image_public_id).build_url(**self._image_transformations)
+            if self._image_transformations:
+                image_url = cloudinary.CloudinaryImage(image_public_id).build_url(**self._image_transformations)
+            else:
+                image_url = cloudinary.CloudinaryImage(image_public_id).build_url()
             self._database.add_image(image_public_id, image_url)
             image = self._load_image(image_url) if self._load_images else image_url
             image_batch.append(image)
@@ -126,3 +129,7 @@ class CloudinaryDataLoader(DataLoader):
             raise e
         except Exception as e:
             raise e
+
+    @overrides
+    def _filter_by_field(self):
+        return "_id"
