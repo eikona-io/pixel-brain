@@ -1,11 +1,11 @@
 import torch
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional, Callable
 from tempfile import TemporaryDirectory
 from pixelbrain.database import Database
 import os
 import boto3
 import glob
-import tempfile
+from overrides import overrides
 from torchvision.io import read_image, read_file, ImageReadMode
 from abc import ABC, abstractmethod
 import math
@@ -18,14 +18,32 @@ import io
 
 
 class DataLoaderFilter(ABC):
-    @abstractmethod
+    def __init__(self, *args, **kwargs):
+        self._size = None
+
     def filter(self, database: Database, image_ids: List[str]) -> List[str]:
         """This defines a filter over the image_ids according to values in the database
         :param: database: Database object with image metadata
         :param: image_ids: list of image ids to filter from
         :return filtered image_ids out of the given image_ids
         """
+        image_ids = self._filter(database, image_ids)
+        self._size = len(image_ids)
+        return image_ids
+
+    @abstractmethod
+    def _filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """This defines a filter over the image_ids according to values in the database
+        :param: database: Database object with image metadata
+        :param: image_ids: list of image ids to filter from
+        :return filtered image_ids out of the given image_ids
+        """
         pass
+
+    def get_size(self):
+        if self._size is None:
+            raise ValueError("Size was not set for this filter")
+        return self._size
 
 
 class DataLoader:
@@ -41,6 +59,7 @@ class DataLoader:
         decode_images=True,
         load_images=True,
         is_recursive: bool = True,
+        max_items: Optional[int] = None,
     ):
         """
         Initializes the DataLoader with images path, database and batch size
@@ -50,6 +69,7 @@ class DataLoader:
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
         :param decode_images: Whether to load the images. Default is True.
+        :param max_items: The maximum number of items to yield. Default is None (no limit).
         """
         self._images_path = images_path
         self._database = database
@@ -61,6 +81,8 @@ class DataLoader:
         self._load_images = load_images
         self._url_cache = {}
         self._url_download_thread = None
+        self._max_items = max_items
+        self._items_yielded = 0
 
         if (
             isinstance(images_path, list)
@@ -78,7 +100,9 @@ class DataLoader:
                     response = requests.get(url)
                     response.raise_for_status()
                     image = Image.open(io.BytesIO(response.content))
-                    temp_filename = f"{self._tempdir.name}/{image_idx}.{image.format.lower()}"
+                    temp_filename = (
+                        f"{self._tempdir.name}/{image_idx}.{image.format.lower()}"
+                    )
                     image.convert("RGB").save(temp_filename)
                     self._url_cache[url] = temp_filename
 
@@ -94,6 +118,10 @@ class DataLoader:
         ids_batch: List[str]
         image_batch: List[torch.Tensor] or List[str] if not load_images
         """
+
+        if self._max_items is not None and self._items_yielded >= self._max_items:
+            self._reset_image_paths()
+            raise StopIteration
 
         self._lazy_load_image_paths_if_needed()
         image_batch, ids_batch = [], []
@@ -111,6 +139,9 @@ class DataLoader:
             image = self._load_image(image_path) if self._load_images else image_path
             image_batch.append(image)
             ids_batch.append(image_id)
+            self._items_yielded += 1
+            if self._max_items is not None and self._items_yielded >= self._max_items:
+                break
         return ids_batch, image_batch
 
     def _pop_image_path(self):
@@ -203,7 +234,15 @@ class DataLoader:
         """
         Returns a clone of the dataloader at current time
         """
-        return DataLoader(self._images_path, self._database, self._batch_size)
+        return DataLoader(
+            self._images_path,
+            self._database,
+            self._batch_size,
+            self._decode_images,
+            self._load_images,
+            self.is_recursive,
+            self._max_items,
+        )
 
     def set_batch_size(self, batch_size: int):
         """
@@ -218,11 +257,16 @@ class DataLoader:
             else read_file(image_path)
         )
 
+    def _filter_by_field(self):
+        return "image_path"
+
     def _get_image_from_path(self, image_path: str) -> str:
         if os.path.exists(image_path):
             # otherwise its a url
             image_path = os.path.realpath(image_path)
-        image_doc = self._database.find_images_with_value("image_path", image_path)
+        image_doc = self._database.find_images_with_value(
+            self._filter_by_field(), image_path
+        )
         if not image_doc:
             raise ValueError(f"Could not find image with image_path: {image_path}")
         assert len(image_doc) == 1, "Only one image doc should have a certain path"
@@ -255,5 +299,37 @@ class DataLoader:
         ]
         filtered_ids = filter.filter(self._database, image_ids)
         self._image_paths = [
-            self._database.find_image(id)["image_path"] for id in filtered_ids
+            self._database.find_image(id)[self._filter_by_field()]
+            for id in filtered_ids
         ]
+
+
+class FirstNDataloaderFilter(DataLoaderFilter):
+    def __init__(self, n: int):
+        self._n = n
+
+    @overrides
+    def _filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """
+        Returns the first N image ids from the list.
+        :param database: Database object with image metadata
+        :param image_ids: list of image ids to filter from
+        :return: first N image ids
+        """
+        return image_ids[: self._n]
+
+
+class FutureFirstNDataloaderFilter(DataLoaderFilter):
+    def __init__(self, get_n_func: Callable[[], int]):
+        self._get_n_func = get_n_func
+
+    @overrides
+    def _filter(self, database: Database, image_ids: List[str]) -> List[str]:
+        """
+        Returns the first N image ids from the list.
+        :param database: Database object with image metadata
+        :param image_ids: list of image ids to filter from
+        :return: first N image ids
+        """
+        n = self._get_n_func()
+        return image_ids[:n]

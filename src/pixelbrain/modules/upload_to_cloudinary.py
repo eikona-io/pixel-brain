@@ -2,10 +2,7 @@ from pixelbrain.pipeline import PipelineModule, DataLoader, DataLoaderFilter
 import cloudinary.uploader
 from typing import Union, Dict, List
 from pixelbrain.database import Database
-from PIL import Image
-from tempfile import TemporaryFile
-import requests
-import io
+from uuid import uuid4
 
 
 class UploadToCloudinaryModule(PipelineModule):
@@ -29,13 +26,11 @@ class UploadToCloudinaryModule(PipelineModule):
             filters=filters,
         )
         self._upload_prefix = upload_prefix
-        self._image_idx = 0
         self._max_retries = max_retries
 
     def _process(self, image_ids: List[str], image_paths: List[str]):
         for image_path in image_paths:
-            remote_image_path = f"{self._upload_prefix}/{self._image_idx}"
-            self._image_idx += 1
+            remote_image_path = f"{self._upload_prefix}/{uuid4().hex[:7]}"
             retry_count = 0
             while retry_count < self._max_retries:
                 try:

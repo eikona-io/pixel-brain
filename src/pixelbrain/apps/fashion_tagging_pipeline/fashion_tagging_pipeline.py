@@ -23,7 +23,7 @@ class FaceExtractionAutgmentationFilter(DataLoaderFilter):
         self._identity_field_name = identity_field_name
         self._max_nof_images = max_nof_images
         
-    def filter(self, database: Database, image_ids: List[str]) -> List[str]:
+    def _filter(self, database: Database, image_ids: List[str]) -> List[str]:
         """
         Filters the given list of image IDs and returns a subset of IDs for face augmentation.
         

@@ -7,32 +7,34 @@ from pixelbrain.database import Database
 from pixelbrain.pipelines.hue_processing_pipeline import HueProcessingPipeline
 from tests.test_utils import TEST_USER_ID, MockCloudinary, MOCK_HUE_DATA_PATH
 from uuid import uuid4
-import cloudinary.uploader
 import pytest
 from unittest.mock import patch
+from pixelbrain.utils import (
+    get_cloudinary_images_from_prefix,
+    delete_image_from_cloudinary,
+)
 
 
 @pytest.mark.slow_suit
 def test_hue_preprocessing_pipeline():
     local_temp_database = Database(database_id=uuid4().hex)
-    with patch.object(cloudinary.uploader, "upload", MockCloudinary.uploader.upload):
-        with tempfile.TemporaryDirectory() as tempdir:
-            MockCloudinary.uploader.temp_dir = tempdir
-            dataloader = DataLoader(MOCK_HUE_DATA_PATH, local_temp_database)
-            local_results_dir = join(tempdir, "hue_pipeline")
-            upload_prefix = f"user_photos/{TEST_USER_ID}/processed"
-            processed_photos_dir = join(tempdir, upload_prefix)
-            makedirs(processed_photos_dir, exist_ok=True)
-            h = HueProcessingPipeline(local_results_dir, dataloader, local_temp_database, upload_prefix)
-            h.process()
+    temp_user_id = str(uuid4())
+    with tempfile.TemporaryDirectory() as tempdir:
+        dataloader = DataLoader(MOCK_HUE_DATA_PATH, local_temp_database)
+        local_results_dir = join(tempdir, "hue_pipeline")
+        augmented_results_dir = join(tempdir, "augmented_hue_pipeline")
+        upload_prefix = f"user_photos/{temp_user_id}/processed"
+        h = HueProcessingPipeline(
+            local_results_dir,
+            augmented_results_dir,
+            dataloader,
+            local_temp_database,
+            upload_prefix,
+            min_nof_processed_images=5,
+        )
+        h.process()
 
-            processed_files = [
-                file
-                for file in listdir(processed_photos_dir)
-                if not file.startswith(".")
-            ]
-            assert set(processed_files) == {
-                "blond1_face0",
-                "blond2_face0",
-                "blond3_face0",
-            }  # The main identity is the blond with 3 images
+        processed_results = get_cloudinary_images_from_prefix(upload_prefix)
+        assert len(processed_results) == 5
+        for result in processed_results:
+            delete_image_from_cloudinary(result)

@@ -94,7 +94,7 @@ class MostCommonIdentityFilter(DataLoaderFilter):
         """
         return database.query_most_common(self._identity_field_name, n=1)[0]
 
-    def filter(self, database: Database, image_ids: List[str]) -> List[str]:
+    def _filter(self, database: Database, image_ids: List[str]) -> List[str]:
         """
         Filters out images that do not have the most common identity.
         """
