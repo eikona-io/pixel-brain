@@ -2,7 +2,7 @@ import os
 import logging
 import sys
 import time
-from typing import Tuple
+from typing import Tuple, List
 
 
 PIXELBRAIN_PATH = os.getenv("PIXELBRAIN_PATH", None)
@@ -66,3 +66,35 @@ def delete_image_from_cloudinary(image_public_id: str):
 
     result = cloudinary.uploader.destroy(image_public_id)
     return result
+
+
+def get_s3_files_from_prefix(bucket_name: str, prefix: str) -> List[str]:
+    """
+    Retrieves a list of file paths from an S3 bucket that match the given prefix.
+
+    :param bucket_name: The name of the S3 bucket.
+    :param prefix: The prefix to filter the files.
+    :return: A list of file paths that match the prefix.
+    """
+    import boto3
+
+    s3 = boto3.client("s3")
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    if "Contents" not in response:
+        return []
+    return [obj["Key"] for obj in response["Contents"]]
+
+
+def delete_s3_file(bucket_name: str, file_path: str) -> dict:
+    """
+    Deletes a file from an S3 bucket.
+
+    :param bucket_name: The name of the S3 bucket.
+    :param file_path: The path of the file to delete.
+    :return: A dictionary containing the result of the deletion operation.
+    """
+    import boto3
+
+    s3 = boto3.client("s3")
+    response = s3.delete_object(Bucket=bucket_name, Key=file_path)
+    return response
