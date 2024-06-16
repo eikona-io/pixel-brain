@@ -157,7 +157,7 @@ class DataLoader:
     def _reset_image_paths(self):
         self._image_paths = self._get_all_image_paths()
         if not self._image_paths:
-            raise ValueError(f"No images found in {self._images_path}")
+            print(f"No images found in {self._images_path}")
 
     def __iter__(self):
         return self
