@@ -64,7 +64,7 @@ class DataLoader:
         """
         Initializes the DataLoader with images path, database and batch size
 
-        :param images_path: The path to the images. Can be a local path, S3 path or web URLs.
+        :param images_path: The path to the images. Can be a local path or web URLs.
         :param database: The database object to use for storing image metadata.
         :param batch_size: The number of images to load at a time. Default is 1.
         :param decode_images: Whether to decode the images. Default is True.
@@ -170,25 +170,13 @@ class DataLoader:
         """
         Loads image from local, cloud, or remote URL
         """
-        if image_path.startswith("s3://"):
-            # Load image from S3
-            image = self._load_image_from_s3(image_path)
-        elif image_path.startswith("http://") or image_path.startswith("https://"):
+        if image_path.startswith("http://") or image_path.startswith("https://"):
             # Load image from remote URL
             image = self._load_image_from_url(image_path)
         else:
             # Load image from local
             image = self._load_image_from_local(image_path)
         return image
-
-    def _load_image_from_s3(self, image_path):
-        """
-        Loads image from S3
-        """
-        s3 = boto3.client("s3")
-        bucket_name, key = image_path.replace("s3://", "").split("/", 1)
-        s3.download_file(bucket_name, key, os.path.join(self._tempdir.name, key))
-        return self._read_image(os.path.join(self._tempdir.name, key))
 
     def _load_image_from_local(self, image_path):
         """
