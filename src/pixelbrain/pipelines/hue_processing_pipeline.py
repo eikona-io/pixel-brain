@@ -3,7 +3,7 @@ from pixelbrain.pipeline import TaggingPipeline
 from pixelbrain.modules.face_extractor import FaceExtractorModule
 from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 from pixelbrain.modules.people_identifier import MostCommonIdentityFilter
-from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
+from pixelbrain.modules.upload import UploadToCloudinaryModule
 from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
 from pixelbrain.utils import create_timestamp
 from pixelbrain.modules.image_save import ImageSaveModule

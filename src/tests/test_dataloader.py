@@ -37,7 +37,7 @@ def test_next_returns_empty_list_when_no_images():
         dl = DataLoader(f"{PIXELBRAIN_PATH}/assets/no_images", db)
 
         # Testing the __next__ method raises stop iteration when empty
-        with pytest.raises(ValueError):
+        with pytest.raises(StopIteration):
             batch = next(dl)
 
 

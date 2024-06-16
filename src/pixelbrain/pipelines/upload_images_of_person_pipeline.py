@@ -1,5 +1,5 @@
 from pixelbrain.modules.images_of_person_finder import ImagesOfPersonFinder
-from pixelbrain.modules.upload_to_cloudinary import UploadToCloudinaryModule
+from pixelbrain.modules.upload import UploadToCloudinaryModule
 from pixelbrain.pipeline import TaggingPipeline, Database, DataLoader
 from pixelbrain.modules.ssim_duplicate_filter import SSIMDuplicateFilter
 from typing import Union, List
