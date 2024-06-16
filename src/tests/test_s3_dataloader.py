@@ -74,3 +74,19 @@ def test_s3_dataloader_next(s3_setup, database):
     assert len(image_batch) == 1
     assert isinstance(image_batch[0], torch.Tensor)
     assert isinstance(ids_batch[0], str)
+
+
+def test_s3_dataloader_next_batch_size_2(s3_setup, database):
+    loader = S3DataLoader(
+        s3_paths_or_prefix="image",
+        bucket_name="test-bucket",
+        database=database,
+        batch_size=2,
+    )
+    ids_batch, image_batch = next(loader)
+    assert len(ids_batch) == 2
+    assert len(image_batch) == 2
+    assert isinstance(image_batch[0], torch.Tensor)
+    assert isinstance(image_batch[1], torch.Tensor)
+    assert isinstance(ids_batch[0], str)
+    assert isinstance(ids_batch[1], str)
