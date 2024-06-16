@@ -1,6 +1,7 @@
 from pixelbrain.data_loader import DataLoader
 from pixelbrain.pipelines.face_similarity_pipeline import FaceSimilarityPipeline
 from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
+from pixelbrain.data_loaders.s3_dataloader import S3DataLoader
 from pixelbrain.database import Database
 from typing import List
 from pixelbrain.utils import get_logger
@@ -17,7 +18,7 @@ class FaceSimilartyScorer:
     Attributes:
         source_dir (str): The directory for the images to be tested.
         compare_to_dir (str): The directory for the images to compare against.
-        source_type (str): The type of source, either 'cloudinary' or 'local'.
+        source_type (str): The type of source, either 'cloudinary', 's3' or 'local'.
         database (Database): An optional database instance for storing results. If not provided, a new one is created.
         scoring_strategies (List[str]): The strategies to use for scoring the distance between embeddings.
             Options are "nearest", "maximum_distance" or "average_k_nearest". Defaults to ["nearest"].
@@ -31,11 +32,12 @@ class FaceSimilartyScorer:
         source_dir: str,
         compare_to_dir: str,
         database: Database,
-        source_type: str = "cloudinary",
+        source_type: str = "s3",
         scoring_strategies: List[str] = ["nearest"],
         score_field_name_prefix: str = "face_similarity_score",
         n_closest_compare_to_to_consider: int = 15,
         k_nearest: int = 5,
+        s3_bucket: str = None,
     ):
         self._database_created = False
         if not database:
@@ -50,8 +52,11 @@ class FaceSimilartyScorer:
             self._compare_to_dataloader = DataLoader(
                 compare_to_dir, database, load_images=True
             )
+        elif source_type == "s3":
+            self._tested_dataloader = S3DataLoader(source_dir, s3_bucket ,database)
+            self._compare_to_dataloader = S3DataLoader(compare_to_dir, s3_bucket, database)
         else:
-            raise ValueError("source_type must be either 'cloudinary' or 'local'")
+            raise ValueError("source_type must be either 'cloudinary', 's3' or 'local'")
         self._source_type = source_type
 
         self._database = database
