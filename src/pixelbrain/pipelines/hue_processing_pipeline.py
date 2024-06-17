@@ -56,11 +56,6 @@ class HueProcessingPipeline(TaggingPipeline):
         augmented_images_dir = join(augmented_images_dir, create_timestamp())
         makedirs(augmented_images_dir, exist_ok=True)
 
-        image_trasforms = {
-            "effect": "pixelate_faces:5",
-            "angle": "hflip",
-        }
-
         self._temp_identity_db = Database(database_id=uuid4().hex)
         upload_dataloader = DataLoader(
             extracted_faces_results_dir,

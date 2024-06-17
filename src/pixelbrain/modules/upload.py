@@ -3,6 +3,8 @@ import cloudinary.uploader
 from typing import Union, Dict, List
 from pixelbrain.database import Database
 from uuid import uuid4
+import requests
+from io import BytesIO
 
 # INSERT_YOUR_REWRITE_HERE
 
@@ -88,6 +90,14 @@ class UploadToS3Module(UploadModuleBase):
         import boto3
 
         s3_client = boto3.client("s3")
-        s3_client.upload_file(image_path, self._s3_bucket, remote_image_path)
+
+        if image_path.startswith("http://") or image_path.startswith("https://"):
+            response = requests.get(image_path)
+            response.raise_for_status()
+            image_data = BytesIO(response.content)
+            s3_client.upload_fileobj(image_data, self._s3_bucket, remote_image_path)
+        else:
+            s3_client.upload_file(image_path, self._s3_bucket, remote_image_path)
+
         image_url = f"s3://{self._s3_bucket}/{remote_image_path}"
         self._database.add_image(remote_image_path, image_url)

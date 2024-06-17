@@ -1,5 +1,5 @@
 from pixelbrain.modules.images_of_person_finder import ImagesOfPersonFinder
-from pixelbrain.modules.upload import UploadToCloudinaryModule
+from pixelbrain.modules.upload import UploadToS3Module
 from pixelbrain.pipeline import TaggingPipeline, Database, DataLoader
 from pixelbrain.modules.ssim_duplicate_filter import SSIMDuplicateFilter
 from typing import Union, List
@@ -29,6 +29,7 @@ class UploadImagesOfPersonPipeline(TaggingPipeline):
         raw_images_path_or_paths: Union[str, List[str]],
         database: Database,
         upload_prefix: str,
+        bucket_name: str,
         person_image_path: str = None,
         distance_threshold: float = 0.6,
         max_results: int = 30,
@@ -72,10 +73,11 @@ class UploadImagesOfPersonPipeline(TaggingPipeline):
                         else None
                     ),
                 ),
-                UploadToCloudinaryModule(
+                UploadToS3Module(
                     upload_dataloader,
                     self._database,
                     upload_prefix=upload_prefix,
+                    s3_bucket=bucket_name,
                     filters=(
                         {
                             self._matched_person_field: True,

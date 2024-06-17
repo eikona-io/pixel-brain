@@ -41,6 +41,7 @@ class ImagesOfPersonFinder(PipelineModule):
                     io.BytesIO(requests.get(path_to_person_image).content)
                 )
                 img_pil = ImageOps.exif_transpose(img_pil)  # important!!
+                img_pil = img_pil.convert("RGB")
                 img_pil.save(temp_file.name)
                 temp_filename = temp_file.name
                 image = read_image(temp_filename, mode=ImageReadMode.RGB)
