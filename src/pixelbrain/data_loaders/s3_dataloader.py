@@ -6,6 +6,8 @@ from pixelbrain.database import Database
 import copy
 from overrides import overrides
 import tempfile
+from pixelbrain.utils import list_s3_objects
+
 
 class S3DataLoader(DataLoader):
     """
@@ -59,13 +61,7 @@ class S3DataLoader(DataLoader):
             # S3 paths were explicitly provided upon instantiation
             return copy.deepcopy(self._images_path)
         else:
-            s3 = boto3.client("s3")
-            return [
-                obj["Key"]
-                for obj in s3.list_objects_v2(
-                    Bucket=self._bucket_name, Prefix=self._images_path
-                )["Contents"]
-            ]
+            return list_s3_objects(self._bucket_name, self._images_path)
 
     def _load_image_from_s3(self, image_path):
         """

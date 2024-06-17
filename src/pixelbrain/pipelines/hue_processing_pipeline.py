@@ -3,8 +3,8 @@ from pixelbrain.pipeline import TaggingPipeline
 from pixelbrain.modules.face_extractor import FaceExtractorModule
 from pixelbrain.pipelines.identity_tagging_pipeline import IdentityTaggingPipeline
 from pixelbrain.modules.people_identifier import MostCommonIdentityFilter
-from pixelbrain.modules.upload import UploadToCloudinaryModule
-from pixelbrain.data_loaders.cloudinary_dataloader import CloudinaryDataLoader
+from pixelbrain.modules.upload import UploadToS3Module
+from pixelbrain.data_loaders.s3_dataloader import S3DataLoader
 from pixelbrain.utils import create_timestamp
 from pixelbrain.modules.image_save import ImageSaveModule
 from os.path import join
@@ -27,6 +27,7 @@ class HueProcessingPipeline(TaggingPipeline):
         self,
         extracted_faces_results_dir: str,
         augmented_images_dir: str,
+        s3_bucket: str,
         dataloader: DataLoader,
         database: Database,
         upload_prefix: str,
@@ -54,7 +55,7 @@ class HueProcessingPipeline(TaggingPipeline):
         makedirs(extracted_faces_results_dir, exist_ok=True)
         augmented_images_dir = join(augmented_images_dir, create_timestamp())
         makedirs(augmented_images_dir, exist_ok=True)
-        
+
         image_trasforms = {
             "effect": "pixelate_faces:5",
             "angle": "hflip",
@@ -66,10 +67,10 @@ class HueProcessingPipeline(TaggingPipeline):
             database=self._temp_identity_db,
             load_images=False,
         )
-        augmented_images_dataloader = CloudinaryDataLoader(
+        augmented_images_dataloader = S3DataLoader(
             upload_prefix,
+            s3_bucket,
             self._database,
-            image_transformations=image_trasforms,
         )
         augmented_images_upload_dataloader = DataLoader(
             augmented_images_dir,
@@ -101,10 +102,11 @@ class HueProcessingPipeline(TaggingPipeline):
                 apply_people_detector=False,
                 identity_field_name=assigned_identity_field_name,
             ),
-            UploadToCloudinaryModule(
+            UploadToS3Module(
                 upload_dataloader,
                 self._database,
                 upload_prefix,
+                s3_bucket,
                 filters=most_common_identity_filter,
             ),
             ImageSaveModule(
@@ -113,9 +115,10 @@ class HueProcessingPipeline(TaggingPipeline):
                 augmented_images_dir,
                 filters=augmented_images_filter,
             ),
-            UploadToCloudinaryModule(
+            UploadToS3Module(
                 augmented_images_upload_dataloader,
                 self._database,
                 upload_prefix,
+                s3_bucket,
             ),
         ]
