@@ -7,6 +7,7 @@ import copy
 from overrides import overrides
 import tempfile
 from pixelbrain.utils import list_s3_objects
+from botocore.exceptions import NoCredentialsError
 
 
 class S3DataLoader(DataLoader):
@@ -46,6 +47,7 @@ class S3DataLoader(DataLoader):
         )
         self._bucket_name = bucket_name
         self._tmpdir = tempfile.TemporaryDirectory()
+        self._link_expiration = 3600  # 1hr
 
     def _load_image(self, image_path: str):
         """
@@ -75,3 +77,16 @@ class S3DataLoader(DataLoader):
     @overrides
     def _filter_by_field(self):
         return "_id"
+
+    def _get_image_path_from_image_id(self, image_id: str):
+        s3_client = boto3.client("s3")
+        try:
+            response = s3_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self._bucket_name, "Key": image_id},
+                ExpiresIn=self._link_expiration,
+            )
+        except NoCredentialsError:
+            raise ValueError("Credentials not available")
+
+        return response

@@ -133,8 +133,8 @@ class DataLoader:
                     self._reset_image_paths()
                     raise StopIteration
                 break
-            image_path = self._pop_image_path()
-            image_id = f"{image_path}"
+            image_id = self._pop_image_path()
+            image_path = self._get_image_path_from_image_id(image_id)
             self._database.add_image(image_id, image_path)
             image = self._load_image(image_path) if self._load_images else image_path
             image_batch.append(image)
@@ -143,6 +143,9 @@ class DataLoader:
             if self._max_items is not None and self._items_yielded >= self._max_items:
                 break
         return ids_batch, image_batch
+
+    def _get_image_path_from_image_id(self, image_id: str):
+        return image_id
 
     def _pop_image_path(self):
         image_path = self._image_paths.pop(0)

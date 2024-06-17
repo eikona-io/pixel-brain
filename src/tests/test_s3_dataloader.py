@@ -15,10 +15,14 @@ def s3_setup():
 
         # Load an actual image from the local filesystem
         with open(f"{PIXELBRAIN_PATH}/assets/test_data/00363_00.jpg", "rb") as image1:
-            s3.put_object(Bucket="test-bucket", Key="images/image1.jpg", Body=image1.read())
+            s3.put_object(
+                Bucket="test-bucket", Key="images/image1.jpg", Body=image1.read()
+            )
 
         with open(f"{PIXELBRAIN_PATH}/assets/test_data/00364_00.jpg", "rb") as image2:
-            s3.put_object(Bucket="test-bucket", Key="images/image2.jpg", Body=image2.read())
+            s3.put_object(
+                Bucket="test-bucket", Key="images/image2.jpg", Body=image2.read()
+            )
 
         yield s3
 
@@ -104,4 +108,15 @@ def test_s3_dataloader_next_batch_size_2(s3_setup, database):
     assert isinstance(ids_batch[1], str)
 
 
-
+def test_s3_dataloader_presigned_urls(s3_setup, database):
+    loader = S3DataLoader(
+        s3_paths_or_prefix="images/",
+        bucket_name="test-bucket",
+        database=database,
+        load_images=False,
+    )
+    ids_batch, image_batch = next(loader)
+    assert len(ids_batch) == 1
+    assert len(image_batch) == 1
+    assert isinstance(image_batch[0], str)
+    assert image_batch[0].startswith("https://")
