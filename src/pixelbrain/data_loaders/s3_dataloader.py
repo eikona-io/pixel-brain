@@ -78,7 +78,8 @@ class S3DataLoader(DataLoader):
     def _filter_by_field(self):
         return "_id"
 
-    def _get_image_path_from_image_id(self, image_id: str):
+    @overrides
+    def _get_image_abs_path_from_image_id(self, image_id: str):
         s3_client = boto3.client("s3")
         try:
             response = s3_client.generate_presigned_url(
