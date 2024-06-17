@@ -6,7 +6,9 @@ def test_cloudinary_gender_detector_app():
     assert assert_env_var_present("CLOUDINARY_URL"), "CLOUDINARY_URL is not set"
 
     test_user_cloudinary_prefix = "user_photos/1702595526432"
-    app = GenderDetectorApp(test_user_cloudinary_prefix, download_from_hf=True)
+    app = GenderDetectorApp(
+        test_user_cloudinary_prefix, download_from_hf=True, source_type="cloudinary"
+    )
     prob_for_famale = app.process()
     assert (
         prob_for_famale > 0.5
