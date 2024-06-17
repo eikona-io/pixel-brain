@@ -98,3 +98,30 @@ def delete_s3_file(bucket_name: str, file_path: str) -> dict:
     s3 = boto3.client("s3")
     response = s3.delete_object(Bucket=bucket_name, Key=file_path)
     return response
+
+
+def list_s3_objects(bucket_name: str, prefix: str) -> List[str]:
+    """
+    Lists the objects in an S3 bucket at a specified prefix.
+
+    Parameters:
+    - bucket_name: The name of the S3 bucket.
+    - prefix: The prefix to filter the objects.
+
+    Returns:
+    - A list of object keys that match the specified prefix.
+    """
+    try:
+        import boto3
+
+        s3 = boto3.client("s3")
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        if "Contents" in response:
+            return [obj["Key"] for obj in response["Contents"] if obj["Size"] != 0]
+        else:
+            return []
+    except Exception as e:
+        print(
+            f"An error occurred while listing S3 objects: {e}",
+        )
+        return []
