@@ -30,6 +30,9 @@ jobs:
         CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
         MONGODB_ATLAS_KEY: ${{ secrets.MONGODB_ATLAS_KEY }}
         OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
       run: |
         ./scripts/run_unit_tests.sh --time-tests --include-slow-suit
 

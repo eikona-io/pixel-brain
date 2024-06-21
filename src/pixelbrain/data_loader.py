@@ -13,9 +13,10 @@ import requests
 import copy
 import threading
 import time
-from PIL import Image
+from PIL import Image, ImageFile
 import io
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class DataLoaderFilter(ABC):
     def __init__(self, *args, **kwargs):

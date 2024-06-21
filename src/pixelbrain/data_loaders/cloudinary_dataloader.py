@@ -7,7 +7,7 @@ from overrides import overrides
 from pixelbrain.utils import get_logger
 import cloudinary, cloudinary.api
 import requests
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFile
 from io import BytesIO
 import os
 from os import environ
@@ -15,6 +15,7 @@ import torch
 from typing import List, Union
 import copy
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 MAX_RESULTS = 1000
 
 
