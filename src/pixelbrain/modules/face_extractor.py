@@ -33,6 +33,7 @@ class FaceExtractorModule(PipelineModule):
         increase_face_ratio: float = 2.5,
         store_in_db: bool = True,
         minimal_face_size: int = 200 * 300,
+        resize_output_size: int = None,
     ):
         """
         Initialize the FaceExtractorModule.
@@ -45,6 +46,7 @@ class FaceExtractorModule(PipelineModule):
         :param image_save_path: Path to save the extracted face images. If None then will use the path of the original image.
         :param clone_original_image_metadata: Boolean to decide if original image metadata should be cloned.
         :param store_in_db: Boolean to decide if the extracted faces should be stored in the database.
+        :param resize_output_size: The size to which the extracted faces will be resized (optional).
         """
         super().__init__(data, database, DeepfacePreprocessor(), filters)
         self._h_ratio = h_ratio
@@ -54,6 +56,7 @@ class FaceExtractorModule(PipelineModule):
         self._increase_face_ratio = increase_face_ratio
         self._store_in_db = store_in_db
         self._minimal_face_size = minimal_face_size
+        self._resize_output_size = resize_output_size
 
     def _process(self, image_ids: List[str], processed_image_batch: List[torch.Tensor]):
         """
@@ -125,6 +128,18 @@ class FaceExtractorModule(PipelineModule):
         face_path = f"{image_dir}/{image_filename}_face{idx}.jpg"
 
         extracted_face_pil = Image.fromarray(extracted_face.astype("uint8"), "RGB")
+        
+        # Resize the image so the larger side is bounded
+        if self._resize_output_size:
+            width, height = extracted_face_pil.size
+            if width > height:
+                new_width = self._resize_output_size
+                new_height = int((self._resize_output_size / width) * height)
+            else:
+                new_height = self._resize_output_size
+                new_width = int((self._resize_output_size / height) * width)
+            
+            extracted_face_pil = extracted_face_pil.resize((new_width, new_height), Image.Resampling.BILINEAR)
         extracted_face_pil.save(face_path, format='JPEG')
         return face_path
 

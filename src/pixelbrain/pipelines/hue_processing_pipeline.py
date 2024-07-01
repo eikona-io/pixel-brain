@@ -10,7 +10,6 @@ from pixelbrain.modules.image_save import ImageSaveModule
 from os.path import join
 from os import makedirs
 from uuid import uuid4
-from typing import List
 
 
 class HueProcessingPipeline(TaggingPipeline):
@@ -34,6 +33,7 @@ class HueProcessingPipeline(TaggingPipeline):
         increase_face_ratio: int = 2.5,
         assigned_identity_field_name: str = "assigned_identity",
         min_nof_processed_images: int = 15,
+        resize_output_size: int = None,
     ):
         """
         Initializes the HueProcessingPipeline with necessary parameters and setups the directory structure.
@@ -45,6 +45,7 @@ class HueProcessingPipeline(TaggingPipeline):
             increase_face_ratio (float, optional): The ratio to increase the size of the face bounding box. Defaults to 2.5.
             assigned_identity_field_name (str, optional): The field name for the assigned identity in the database. Defaults to "assigned_identity".
             min_nof_processed_images (int, optional): The minimum number of images to be processed. Defaults to 15. Below that number of images, the images are augmented.
+            resize_output_size (int, optional): The size to which the extracted faces will be resized. Defaults to None.
         """
         super().__init__(extracted_faces_results_dir, database=database)
 
@@ -89,6 +90,7 @@ class HueProcessingPipeline(TaggingPipeline):
                 self._database,
                 image_save_path=extracted_faces_results_dir,
                 increase_face_ratio=increase_face_ratio,
+                resize_output_size=resize_output_size,
                 store_in_db=False,  # Do not store extracted faces metadata in the database
             ),
             IdentityTaggingPipeline(
