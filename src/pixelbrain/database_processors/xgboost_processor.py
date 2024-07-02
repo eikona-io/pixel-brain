@@ -51,12 +51,12 @@ class XGBoostTrainer(ABC):
             param_grid
             if param_grid
             else {
-                "max_depth": [3, 6, 9],
-                "learning_rate": [0.01, 0.1],
+                "max_depth": [2, 3, 6],
+                "learning_rate": [0.05, 0.1, 0.15, 0.2],
                 "n_estimators": [100, 200, 300],
-                "subsample": [0.3, 0.5, 0.7, 0.9],
-                "colsample_bytree": [0.4, 0.6, 0.8],
-                "colsample_bylevel": [0.4, 0.6, 0.8],
+                "subsample": [0.7, 0.9, 0.95, 0.98],
+                "colsample_bytree": [0.3, 0.4, 0.6, 0.8],
+                "colsample_bylevel": [0.3, 0.4, 0.6, 0.8],
                 "gamma": [0],
                 "min_child_weight": [1],
             }
@@ -298,7 +298,7 @@ class XGBoostRankerTrainer(XGBoostTrainer):
         )
         groups = grouped_df[self._group_by_field_name].values
         gss = GroupShuffleSplit(
-            test_size=self._test_split, n_splits=1, random_state=22
+            test_size=self._test_split, n_splits=1, random_state=23
         ).split(X, y, groups=groups)
         train_idx, test_idx = next(gss)
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
