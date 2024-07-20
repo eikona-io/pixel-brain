@@ -7,7 +7,10 @@ from pixelbrain.modules.identifying_strategies import (
     PairwiseIdentifyingStrategy,
     DBSCANIdentifyingStrategy,
 )
+from pixelbrain.utils import get_logger
 
+
+logger = get_logger(__name__)
 
 class PeopleIdentifierModule(PipelineModule):
     """
@@ -106,5 +109,13 @@ class MostCommonIdentityFilter(DataLoaderFilter):
                 self._identity_field_name in image_data
                 and image_data[self._identity_field_name] == most_common_identity
             ):
-                filtered_image_ids.append(image_id)
+                        filtered_image_ids.append(image_id)
+        # Filter out identities that came from the same image, as this is certainly not the same identity
+        filtered_images_names = [id.split('_face')[0] for id in filtered_image_ids]
+        duplicate_filter = []
+        for idx, id in enumerate(filtered_images_names):
+            if filtered_images_names.count(id) > 1:
+                logger.warn('Ignoring duplicate identity in face extractor')
+                duplicate_filter.append(idx)
+        filtered_image_ids = [id for i, id in enumerate(filtered_image_ids) if i not in duplicate_filter]        
         return filtered_image_ids
